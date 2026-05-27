@@ -4,33 +4,33 @@
 {% block title %}Iniciar Sesión - MedCloud{% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <div class="login-card">
-        <div class="login-header">
-            <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="Logo" class="login-logo">
+<div>
+    <div>
+        <div>
+            <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="Logo">
             <h2>Iniciar Sesión</h2>
             <p>Accede a tu cuenta de MedCloud</p>
         </div>
 
-        <form method="post" class="login-form">
+        <form method="post">
             {% csrf_token %}
             {% if form.errors %}
-            <div class="alert alert-error">
+            <div>
                 Usuario o contraseña incorrectos.
             </div>
             {% endif %}
 
-            <div class="form-group">
+            <div>
                 <label for="id_username">Usuario</label>
                 {{ form.username }}
             </div>
 
-            <div class="form-group">
+            <div>
                 <label for="id_password">Contraseña</label>
                 {{ form.password }}
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+            <button type="submit">Ingresar</button>
         </form>
     </div>
 </div>

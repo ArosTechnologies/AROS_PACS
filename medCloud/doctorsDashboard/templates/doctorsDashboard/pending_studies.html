@@ -2,26 +2,26 @@
 {% load static %}
 
 {% block content %}
-<div class="pending-studies-page">
+<div>
     <!-- Navbar is in base.html -->
 
-    <link rel="stylesheet" href="{% static 'core/css/study_list_item.css' %}">
+    
 
-    <div class="pending-studies-content">
-        <div class="page-header">
-            <h1 class="page-title">Estudios Pendientes</h1>
-            <div class="view-toggles">
-                <button class="view-toggle-btn" id="listViewBtn" aria-label="List View">
+    <div>
+        <div>
+            <h1>Estudios Pendientes</h1>
+            <div>
+                <button  id="listViewBtn" aria-label="List View">
                     <img src="{% static 'core/assets/icons/stack_icon.svg' %}" alt="List View" width="24" height="24">
                 </button>
-                <button class="view-toggle-btn active" id="gridViewBtn" aria-label="Grid View">
+                <button  id="gridViewBtn" aria-label="Grid View">
                     <img src="{% static 'core/assets/icons/grid_icon.svg' %}" alt="Grid View" width="24" height="24">
                 </button>
             </div>
         </div>
 
         <!-- Grid View Container -->
-        <div class="studies-grid" id="studiesGridView">
+        <div  id="studiesGridView">
             {% for study in studies %}
             {% url 'studyReportCreate' study.pk as report_url %}
 
@@ -34,19 +34,19 @@
             {% endwith %}
 
             {% empty %}
-            <p style="text-align: center; width: 100%; color: #999;">No hay estudios pendientes.</p>
+            <p>No hay estudios pendientes.</p>
             {% endfor %}
         </div>
 
         <!-- List View Container (Hidden by default) -->
-        <div class="studies-list" id="studiesListView" style="display: none;">
+        <div  id="studiesListView">
             {% for study in studies %}
             {% url 'studyReportCreate' study.pk as report_url %}
             {% with first=study.id_patient.first_name last=study.id_patient.last_name %}
             {% include "core/components/study_list_item.html" with study_url=report_url title=first|add:" "|add:last date=study.date study_id=study.pk %}
             {% endwith %}
             {% empty %}
-            <p style="text-align: center; width: 100%; color: #999;">No hay estudios pendientes.</p>
+            <p>No hay estudios pendientes.</p>
             {% endfor %}
         </div>
     </div>

@@ -7,50 +7,50 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-container">
-    <h1 class="page-title">Gestionar Acceso de Doctores</h1>
-    <p class="page-subtitle">Controla qué doctores asociados pueden ver tus estudios y reportes.</p>
+<div>
+    <h1>Gestionar Acceso de Doctores</h1>
+    <p>Controla qué doctores asociados pueden ver tus estudios y reportes.</p>
 
     <!-- Doctor Search -->
-    <div class="search-section">
+    <div>
         <label>Buscar Doctor Asociado</label>
-        <div class="search-wrapper" id="searchWrapper">
-            <input type="text" class="search-input" id="doctorSearchInput" placeholder="Buscar por nombre..."
+        <div  id="searchWrapper">
+            <input type="text"  id="doctorSearchInput" placeholder="Buscar por nombre..."
                 autocomplete="off">
-            <div class="search-results" id="searchResults"></div>
+            <div  id="searchResults"></div>
         </div>
     </div>
 
     <!-- Current Granted Doctors -->
-    <div class="doctors-section">
+    <div>
         <h2>
             Doctores con Acceso
-            <span class="badge" id="doctorCount">{{ granted_doctors|length }}</span>
+            <span  id="doctorCount">{{ granted_doctors|length }}</span>
         </h2>
-        <div class="doctors-list" id="doctorsList">
+        <div  id="doctorsList">
             {% for doc in granted_doctors %}
-            <div class="doctor-card" id="doctor-{{ doc.pk }}">
+            <div  id="doctor-{{ doc.pk }}">
                 <div>
-                    <div class="doctor-info-name">{{ doc }}</div>
-                    <div class="doctor-info-detail">{{ doc.university|default:"" }}</div>
-                    <div class="doctor-extra-details">
-                        <div class="details-inner">
+                    <div>{{ doc }}</div>
+                    <div>{{ doc.university|default:"" }}</div>
+                    <div>
+                        <div>
                             {% if doc.professional_id %}
-                            <div class="detail-row"><span class="detail-icon">🪪</span> Cédula: {{ doc.professional_id }}</div>
+                            <div><span>🪪</span> Cédula: {{ doc.professional_id }}</div>
                             {% endif %}
                             {% if doc.phone %}
-                            <div class="detail-row"><span class="detail-icon">📞</span> {{ doc.phone }}</div>
+                            <div><span>📞</span> {{ doc.phone }}</div>
                             {% endif %}
                             {% if doc.user.email %}
-                            <div class="detail-row"><span class="detail-icon">✉️</span> {{ doc.user.email }}</div>
+                            <div><span>✉️</span> {{ doc.user.email }}</div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                <button class="btn-revoke" data-doctor-id="{{ doc.pk }}">✕ Revocar</button>
+                <button  data-doctor-id="{{ doc.pk }}">✕ Revocar</button>
             </div>
             {% empty %}
-            <div class="empty-state" id="emptyState">
+            <div  id="emptyState">
                 No has dado acceso a ningún doctor asociado. Usa la búsqueda de arriba para agregar uno.
             </div>
             {% endfor %}
@@ -59,7 +59,7 @@
 </div>
 
 <!-- Toast notification -->
-<div class="toast" id="toast"></div>
+<div  id="toast"></div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -86,18 +86,18 @@
                     .then(data => {
                         searchResults.innerHTML = '';
                         if (data.length === 0) {
-                            searchResults.innerHTML = '<div class="no-results">No se encontraron doctores.</div>';
+                            searchResults.innerHTML = '<div>No se encontraron doctores.</div>';
                         } else {
                             data.forEach(d => {
                                 const item = document.createElement('div');
                                 item.className = 'search-result-item';
                                 item.innerHTML = `
-                                <div class="result-info">
-                                    <div class="result-name">${d.name}</div>
-                                    <div class="result-detail">${d.university || ''}</div>
-                                    ${d.professional_id ? `<div class="result-detail">Cédula: ${d.professional_id}</div>` : ''}
-                                    ${d.phone ? `<div class="result-detail">Tel: ${d.phone}</div>` : ''}
-                                    ${d.email ? `<div class="result-detail">${d.email}</div>` : ''}
+                                <div>
+                                    <div>${d.name}</div>
+                                    <div>${d.university || ''}</div>
+                                    ${d.professional_id ? `<div>Cédula: ${d.professional_id}</div>` : ''}
+                                    ${d.phone ? `<div>Tel: ${d.phone}</div>` : ''}
+                                    ${d.email ? `<div>${d.email}</div>` : ''}
                                 </div>
                             `;
                                 const btn = document.createElement('button');
@@ -158,17 +158,17 @@
                         card.id = `doctor-${doctorId}`;
                         card.innerHTML = `
                     <div>
-                        <div class="doctor-info-name">${doctorData.name}</div>
-                        <div class="doctor-info-detail">${doctorData.university || ''}</div>
-                        <div class="doctor-extra-details">
-                            <div class="details-inner">
-                                ${doctorData.professional_id ? `<div class="detail-row"><span class="detail-icon">🪪</span> Cédula: ${doctorData.professional_id}</div>` : ''}
-                                ${doctorData.phone ? `<div class="detail-row"><span class="detail-icon">📞</span> Tel: ${doctorData.phone}</div>` : ''}
-                                ${doctorData.email ? `<div class="detail-row"><span class="detail-icon">✉️</span> ${doctorData.email}</div>` : ''}
+                        <div>${doctorData.name}</div>
+                        <div>${doctorData.university || ''}</div>
+                        <div>
+                            <div>
+                                ${doctorData.professional_id ? `<div><span>🪪</span> Cédula: ${doctorData.professional_id}</div>` : ''}
+                                ${doctorData.phone ? `<div><span>📞</span> Tel: ${doctorData.phone}</div>` : ''}
+                                ${doctorData.email ? `<div><span>✉️</span> ${doctorData.email}</div>` : ''}
                             </div>
                         </div>
                     </div>
-                    <button class="btn-revoke" data-doctor-id="${doctorId}">✕ Revocar</button>
+                    <button  data-doctor-id="${doctorId}">✕ Revocar</button>
                 `;
                         doctorsList.appendChild(card);
                         updateCount(1);

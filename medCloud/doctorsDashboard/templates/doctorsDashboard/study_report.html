@@ -2,61 +2,61 @@
 {% load static %}
 
 {% block content %}
-<div class="study-report-page">
+<div>
     <!-- Navbar is already in base.html, but we need to ensure the container padding accounts for it -->
 
-    <div class="report-content-container">
+    <div>
         <!-- Left Side - Iframe for Study -->
-        <div class="image-section">
+        <div>
             <!-- Iframe for the DICOM Viewer -->
-            <iframe src="{{ study.pacs_url }}" class="study-image" frameborder="0" allow="fullscreen"></iframe>
+            <iframe src="{{ study.pacs_url }}"  frameborder="0" allow="fullscreen"></iframe>
         </div>
 
         <!-- Draggable Handle -->
-        <div class="resizer" id="dragHandle"></div>
+        <div  id="dragHandle"></div>
 
         <!-- Right Side - Report Form -->
-        <div class="form-section">
-            <form method="post" class="form-content">
+        <div>
+            <form method="post">
                 {% csrf_token %}
 
-                <div class="form-group">
-                    <label class="form-label">Asunto del estudio</label>
-                    <div class="input-wrapper">
+                <div>
+                    <label>Asunto del estudio</label>
+                    <div>
                         {{ form.about }}
                         <!-- Assuming form.about renders <input ...> via widget tweaks or we manually render it -->
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Descripción del paciente</label>
-                    <div class="input-wrapper">
+                <div>
+                    <label>Descripción del paciente</label>
+                    <div>
                         {{ form.patients_description }}
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Hallazgos</label>
-                    <div class="textarea-wrapper">
+                <div>
+                    <label>Hallazgos</label>
+                    <div>
                         {{ form.findings }}
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Conclusiones del estudio</label>
-                    <div class="textarea-wrapper">
+                <div>
+                    <label>Conclusiones del estudio</label>
+                    <div>
                         {{ form.conclusions }}
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Recomendaciones al paciente</label>
-                    <div class="textarea-wrapper">
+                <div>
+                    <label>Recomendaciones al paciente</label>
+                    <div>
                         {{ form.recommendations }}
                     </div>
                 </div>
 
-                <button type="submit" class="generate-report-btn">
+                <button type="submit">
                     Generar Reporte
                 </button>
             </form>
@@ -110,7 +110,7 @@
             const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
 
             // Limit the resize range (e.g., between 20% and 80%)
-            if (newLeftWidth > 20 && newLeftWidth < 80) {
+            if (newLeftWidth> 20 && newLeftWidth < 80) {
                 leftSide.style.width = `${newLeftWidth}%`;
                 // rightSide flex:1 will automatically take remaining space
             }

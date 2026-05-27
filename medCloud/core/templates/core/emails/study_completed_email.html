@@ -6,15 +6,15 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
+    <div>
+        <div>
             <h1>Tu estudio está listo</h1>
         </div>
-        <div class="body">
+        <div>
             <p>Hola <strong>{{ patient.first_name }}</strong>,</p>
             <p>Te informamos que tu estudio ha sido completado y el reporte ya está disponible para consulta en la
                 plataforma.</p>
-            <div class="study-info">
+            <div>
                 <p><strong>Estudio:</strong> {{ report.about }}</p>
                 <p><strong>Fecha:</strong> {{ report.date|date:"d/m/Y" }}</p>
                 <p><strong>Doctor:</strong> {{ report.doctor_in_charge.first_name }} {{ report.doctor_in_charge.last_name }}</p>
@@ -22,9 +22,9 @@
             <p>Tu reporte se encuentra adjunto a este correo en formato PDF. Para abrirlo, utiliza la contraseña que se
                 te entregó en el laboratorio.</p>
             <p>También puedes consultar tu reporte iniciando sesión en la plataforma.</p>
-            <p style="font-size: 14px; color: #666;">— El equipo de MedCloud</p>
+            <p>— El equipo de MedCloud</p>
         </div>
-        <div class="footer">
+        <div>
             &copy; 2026 MedCloud. Todos los derechos reservados.
         </div>
     </div>

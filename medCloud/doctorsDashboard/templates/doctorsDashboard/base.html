@@ -6,40 +6,38 @@
     <meta charset="UTF-8">
     <title>{% block title %}MedCloud{% endblock %}</title>
     <!-- Use the local app css -->
-    <link rel="stylesheet" href="{% static 'core/css/design-system.css' %}">
-    <link rel="stylesheet" href="{% static 'doctorsDashboard/style.css' %}">
+    
+    
     {% block head %}{% endblock %}
 </head>
 
 <body>
     <header>
-        <nav class="navbar">
+        <nav>
             <!-- Left: Logo -->
-            <div class="navbar-left">
-                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud"
-                    class="navbar-logo">
+            <div>
+                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud">
             </div>
 
             <!-- Center: Navigation Links -->
-            <div class="navbar-center">
-                <ul class="nav-links">
-                    <li><a href="{% url 'pendingStudies' %}" class="nav-link">Estudios Pendientes</a></li>
-                    <li><a href="{% url 'studiesInProgress' %}" class="nav-link">Estudios en Progreso</a></li>
+            <div>
+                <ul>
+                    <li><a href="{% url 'pendingStudies' %}">Estudios Pendientes</a></li>
+                    <li><a href="{% url 'studiesInProgress' %}">Estudios en Progreso</a></li>
                 </ul>
             </div>
 
             <!-- Right: User Info -->
-            <div class="navbar-right">
+            <div>
                 <!-- Use a custom logout view that handles cleanup -->
-                <a href="{% url 'doctor_logout' %}" class="nav-link" id="logoutBtn">Cerrar Sesión</a>
-                <a href="{% url 'myProfile' %}" class="user-info" style="text-decoration: none;">
-                    <span class="welcome-text">Bienvenido, Dr. {{ user.last_name }}</span>
+                <a href="{% url 'doctor_logout' %}"  id="logoutBtn">Cerrar Sesión</a>
+                <a href="{% url 'myProfile' %}">
+                    <span>Bienvenido, Dr. {{ user.last_name }}</span>
                     {% if user.reporting_doctor_profile.profile_picture %}
-                    <img src="{{ user.reporting_doctor_profile.profile_picture.url }}" alt="Profile" class="user-avatar"
-                        style="width: 35px; height: 35px; object-fit: cover; border-radius: 50%;">
+                    <img src="{{ user.reporting_doctor_profile.profile_picture.url }}" alt="Profile">
                     {% else %}
                     <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:'Doc' }}&background=0D8ABC&color=fff&rounded=true&bold=true"
-                        alt="Profile" class="user-avatar">
+                        alt="Profile">
                     {% endif %}
                 </a>
             </div>

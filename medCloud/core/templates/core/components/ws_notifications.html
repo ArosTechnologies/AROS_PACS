@@ -1,137 +1,7 @@
 <!-- WebSocket Notifications with Live DOM Updates -->
-<style>
-    .ws-toast-container {
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        z-index: 10000;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        pointer-events: none;
-    }
 
-    .ws-toast {
-        pointer-events: auto;
-        background: #1e293b;
-        color: #f8fafc;
-        padding: 14px 20px;
-        border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        font-size: 14px;
-        font-family: 'Inter', sans-serif;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 280px;
-        max-width: 400px;
-        animation: wsSlideIn 0.35s ease-out;
-        border-left: 4px solid #3b82f6;
-    }
 
-    .ws-toast.ws-toast-study {
-        border-left-color: #3b82f6;
-    }
-
-    .ws-toast.ws-toast-report {
-        border-left-color: #10b981;
-    }
-
-    .ws-toast.ws-toast-locked {
-        border-left-color: #f59e0b;
-    }
-
-    .ws-toast.ws-toast-request {
-        border-left-color: #8b5cf6;
-    }
-
-    .ws-toast-icon {
-        font-size: 18px;
-        flex-shrink: 0;
-    }
-
-    .ws-toast-body {
-        flex: 1;
-    }
-
-    .ws-toast-title {
-        font-weight: 600;
-        font-size: 13px;
-        margin-bottom: 2px;
-    }
-
-    .ws-toast-message {
-        opacity: 0.85;
-        font-size: 12px;
-    }
-
-    .ws-toast-close {
-        background: none;
-        border: none;
-        color: #94a3b8;
-        cursor: pointer;
-        font-size: 16px;
-        padding: 0 4px;
-        flex-shrink: 0;
-    }
-
-    .ws-toast-close:hover {
-        color: #f8fafc;
-    }
-
-    @keyframes wsSlideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes wsSlideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-
-    @keyframes wsFadeOut {
-        from {
-            opacity: 1;
-            transform: scale(1);
-            max-height: 300px;
-            margin-bottom: 10px;
-        }
-
-        to {
-            opacity: 0;
-            transform: scale(0.95);
-            max-height: 0;
-            margin-bottom: 0;
-            padding: 0;
-        }
-    }
-
-    .ws-toast.ws-removing {
-        animation: wsSlideOut 0.3s ease-in forwards;
-    }
-
-    .ws-dom-removing {
-        animation: wsFadeOut 0.4s ease-in forwards;
-        overflow: hidden;
-        pointer-events: none;
-    }
-</style>
-
-<div id="ws-toast-container" class="ws-toast-container"></div>
+<div id="ws-toast-container"></div>
 
 <script>
     (function () {
@@ -169,12 +39,12 @@
             const detail = data.patient_name || data.doctor_name || '';
 
             toast.innerHTML = `
-            <span class="ws-toast-icon">${icon}</span>
-            <div class="ws-toast-body">
-                <div class="ws-toast-title">${message}</div>
-                ${detail ? `<div class="ws-toast-message">${detail}</div>` : ''}
+            <span>${icon}</span>
+            <div>
+                <div>${message}</div>
+                ${detail ? `<div>${detail}</div>` : ''}
             </div>
-            <button class="ws-toast-close" onclick="this.parentElement.classList.add('ws-removing'); setTimeout(() => this.parentElement.remove(), 300)">✕</button>
+            <button  onclick="this.parentElement.classList.add('ws-removing'); setTimeout(() => this.parentElement.remove(), 300)">✕</button>
         `;
 
             container.appendChild(toast);
@@ -210,19 +80,19 @@
             // Doctor pending studies grid
             const grid = document.getElementById('studiesGridView');
             if (grid && grid.querySelectorAll('.study-card').length === 0 && !grid.querySelector('.ws-empty-msg')) {
-                grid.innerHTML = '<p class="ws-empty-msg" style="text-align: center; width: 100%; color: #999;">No hay estudios pendientes.</p>';
+                grid.innerHTML = '<p>No hay estudios pendientes.</p>';
             }
 
             // Doctor pending studies list
             const list = document.getElementById('studiesListView');
             if (list && list.querySelectorAll('.study-list-item').length === 0 && !list.querySelector('.ws-empty-msg')) {
-                list.innerHTML = '<p class="ws-empty-msg" style="text-align: center; width: 100%; color: #999;">No hay estudios pendientes.</p>';
+                list.innerHTML = '<p>No hay estudios pendientes.</p>';
             }
 
             // Doctor in-progress grid
             const progressGrid = document.querySelector('.studies-grid');
             if (progressGrid && progressGrid.querySelectorAll('.study-card').length === 0 && !progressGrid.querySelector('.ws-empty-msg')) {
-                progressGrid.innerHTML = '<p class="ws-empty-msg" style="text-align: center; width: 100%; color: #999;">No tienes estudios en progreso.</p>';
+                progressGrid.innerHTML = '<p>No tienes estudios en progreso.</p>';
             }
         }
 

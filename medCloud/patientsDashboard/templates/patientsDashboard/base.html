@@ -7,50 +7,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MedCloud{% endblock %}</title>
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    
+    
 
-    <link rel="stylesheet" href="{% static 'core/css/design-system.css' %}">
-    <link rel="stylesheet" href="{% static 'patientsDashboard/base.css' %}">
+    
+    
     <!-- Reuse doctor styles for navbar/layout consistency -->
-    <link rel="stylesheet" href="{% static 'doctorsDashboard/style.css' %}">
+    
     {% block head %}
     {% endblock %}
 </head>
 
 <body>
     <header>
-        <nav class="navbar">
+        <nav>
             <!-- Left: Logo -->
-            <div class="navbar-left">
-                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud"
-                    class="navbar-logo">
+            <div>
+                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud">
             </div>
 
             <!-- Center: Navigation Links -->
-            <div class="navbar-center">
-                <ul class="nav-links">
-                    <li><a href="{% url 'patientsDashboard:patientsDashboard' %}" class="nav-link">Mis Estudios</a></li>
-                    <li><a href="{% url 'patientsDashboard:manage_doctors' %}" class="nav-link">Mis Doctores</a></li>
+            <div>
+                <ul>
+                    <li><a href="{% url 'patientsDashboard:patientsDashboard' %}">Mis Estudios</a></li>
+                    <li><a href="{% url 'patientsDashboard:manage_doctors' %}">Mis Doctores</a></li>
                 </ul>
             </div>
 
             <!-- Right: User Info -->
-            <div class="navbar-right">
-                <a href="{% url 'patientsDashboard:logout' %}" class="nav-link">Cerrar Sesión</a>
-                <a href="{% url 'patientsDashboard:profile' %}" class="user-info" style="text-decoration: none;">
+            <div>
+                <a href="{% url 'patientsDashboard:logout' %}">Cerrar Sesión</a>
+                <a href="{% url 'patientsDashboard:profile' %}">
                     {% if patient %}
-                    <span class="welcome-text">Bienvenido, {{ patient.first_name }}</span>
+                    <span>Bienvenido, {{ patient.first_name }}</span>
                     {% else %}
-                    <span class="welcome-text">Bienvenido, {{ user.first_name }}</span>
+                    <span>Bienvenido, {{ user.first_name }}</span>
                     {% endif %}
                     {% if user.patient_profile.profile_picture %}
-                    <img src="{{ user.patient_profile.profile_picture.url }}" alt="Profile" class="user-avatar"
-                        style="width: 35px; height: 35px; object-fit: cover; border-radius: 50%;">
+                    <img src="{{ user.patient_profile.profile_picture.url }}" alt="Profile">
                     {% else %}
                     <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:'User' }}&background=0D8ABC&color=fff&rounded=true&bold=true"
-                        alt="Profile" class="user-avatar">
+                        alt="Profile">
                     {% endif %}
                 </a>
             </div>
@@ -58,7 +56,7 @@
         {% block header %}{% endblock %}
     </header>
 
-    <main class="main-content" style="margin-top: 60px;">
+    <main>
         {% block content %}
         {% endblock %}
     </main>

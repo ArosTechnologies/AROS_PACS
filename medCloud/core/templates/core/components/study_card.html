@@ -1,48 +1,46 @@
 {% if blocked %}
-<div class="study-card {{ extra_classes }} study-card-blocked" data-study-id="{{ study_id }}">
+<div  data-study-id="{{ study_id }}">
     {% else %}
-    <a href="{{ study_url }}" class="study-card {{ extra_classes }}" data-study-id="{{ study_id }}">
+    <a href="{{ study_url }}"  data-study-id="{{ study_id }}">
         {% endif %}
         {% if pacs_url %}
-        <iframe class="study-card-image" src="{{ pacs_url }}" scrolling="no" frameborder="0"></iframe>
+        <iframe  src="{{ pacs_url }}" scrolling="no" frameborder="0"></iframe>
         {% else %}
-        <div class="study-card-image study-card-placeholder">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span class="placeholder-text">Esperando imágenes del PACS...</span>
+        <div>
+            
+            <span>Esperando imágenes del PACS...</span>
         </div>
         {% endif %}
-        <div class="study-card-overlay"></div>
+        <div></div>
         {% if blocked %}
-        <div class="study-card-lock-overlay">
+        <div>
             {% if images_pending %}
-            <span class="lock-text">Imágenes Pendientes</span>
+            <span>Imágenes Pendientes</span>
             {% else %}
-            <span class="lock-text">En Progreso</span>
+            <span>En Progreso</span>
             {% endif %}
         </div>
         {% endif %}
-        <div class="study-card-info">
+        <div>
             {% if date %}
-            <p class="study-date">{{ date|date:"d M Y" }}</p>
+            <p>{{ date|date:"d M Y" }}</p>
             {% endif %}
 
-            <p class="patient-name">{{ title }}</p>
+            <p>{{ title }}</p>
 
             {% if subtitle %}
-            <p class="study-date" style="font-size: 13px; opacity: 0.8;">{{ subtitle }}</p>
+            <p>{{ subtitle }}</p>
             {% endif %}
 
             {% if status %}
             {% if status == 'completed' %}
-            <span class="status-badge completed">Completado</span>
+            <span>Completado</span>
             {% elif status == 'pending' %}
-            <span class="status-badge pending">Pendiente</span>
+            <span>Pendiente</span>
             {% elif status == 'in_progress' %}
-            <span class="status-badge in-progress">En Progreso</span>
+            <span>En Progreso</span>
             {% elif status == 'images_pending' %}
-            <span class="status-badge pending">Imágenes Pendientes</span>
+            <span>Imágenes Pendientes</span>
             {% endif %}
             {% endif %}
         </div>

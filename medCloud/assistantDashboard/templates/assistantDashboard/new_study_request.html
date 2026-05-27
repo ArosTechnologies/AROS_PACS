@@ -29,13 +29,13 @@
                     <input type="hidden" name="id_patient" id="patientIdHidden">
                     <div id="searchResults"></div>
                 </div>
-                <div id="selectedPatient" style="display: none;">
+                <div id="selectedPatient">
                     <span id="selectedPatientName"></span>
                     <button type="button" id="clearPatient">✕</button>
                 </div>
 
                 <!-- Inline Create Patient Form (hidden by default) -->
-                <div id="createPatientForm" style="display: none;">
+                <div id="createPatientForm">
                     <h3>Registrar Nuevo Paciente</h3>
                     <div id="createFormError"></div>
                     <div>
@@ -177,8 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
         createError.style.display = 'none';
         // Pre-fill name if the search query looks like a name
         const parts = lastQuery.split(' ');
-        if (parts.length >= 1) document.getElementById('newPatientFirstName').value = parts[0] || '';
-        if (parts.length >= 2) document.getElementById('newPatientLastName').value = parts.slice(1).join(' ') || '';
+        if (parts.length>= 1) document.getElementById('newPatientFirstName').value = parts[0] || '';
+        if (parts.length>= 2) document.getElementById('newPatientLastName').value = parts.slice(1).join(' ') || '';
         document.getElementById('newPatientFirstName').focus();
     }
 

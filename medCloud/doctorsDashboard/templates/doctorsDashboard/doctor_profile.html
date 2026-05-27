@@ -2,69 +2,62 @@
 {% load static %}
 
 {% block content %}
-<div class="user-profile-page">
-    <div class="profile-content">
-        <div class="profile-header">
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; margin-right: 2rem;">
-                <div class="profile-pic-container">
+<div>
+    <div>
+        <div>
+            <div>
+                <div>
                     {% if doctor.profile_picture %}
-                    <img src="{{ doctor.profile_picture.url }}" alt="Avatar" class="profile-pic-img">
+                    <img src="{{ doctor.profile_picture.url }}" alt="Avatar">
                     {% else %}
                     <img src="https://ui-avatars.com/api/?name={{ doctor.user.first_name }}+{{ doctor.user.last_name }}&background=0D8ABC&color=fff&rounded=true&bold=true&size=270"
-                        alt="Dr. {{ doctor.name }} {{ doctor.last_name }}" class="profile-pic-img">
+                        alt="Dr. {{ doctor.name }} {{ doctor.last_name }}">
                     {% endif %}
                 </div>
-                <button type="button" onclick="openProfileCropper()"
-                    style="display: inline-flex; align-items: center; gap: 8px; font-size: 15px; padding: 10px 24px; border-radius: 20px; background: white; color: #334155; border: 1px solid #cbd5e1; cursor: pointer; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: background 0.2s;">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
-                        </path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
+                <button type="button" onclick="openProfileCropper()">
+                    
                     Actualizar Foto
                 </button>
             </div>
-            <div class="doctor-info-container">
-                <h2 class="doctor-name">Dr. {{ doctor.name }} {{ doctor.last_name }}</h2>
-                <p class="doctor-email">{{ doctor.email }}</p>
-                <p class="doctor-university">{{ doctor.university }}</p>
-                <p class="doctor-license">Cedula: {{ doctor.professional_id }}</p>
-                <p class="doctor-license">Especialidad: {{ doctor.specialty }}</p>
+            <div>
+                <h2>Dr. {{ doctor.name }} {{ doctor.last_name }}</h2>
+                <p>{{ doctor.email }}</p>
+                <p>{{ doctor.university }}</p>
+                <p>Cedula: {{ doctor.professional_id }}</p>
+                <p>Especialidad: {{ doctor.specialty }}</p>
             </div>
         </div>
 
         <!-- History Table Section -->
-        <div class="history-table-container">
-            <h3 style="font-family: 'Inter', sans-serif; font-weight: 300; font-size: 24px; margin-bottom: 20px;">
+        <div>
+            <h3>
                 Historial de Reportes</h3>
-            <table class="history-table">
+            <table>
                 <thead>
-                    <tr class="history-header">
-                        <th class="header-cell patient">Paciente</th>
-                        <th class="header-cell date">Fecha</th>
-                        <th class="header-cell subject">Asunto</th>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Fecha</th>
+                        <th>Asunto</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for study in history_studies %}
-                    <tr class="history-row" data-href="{% url 'studyDetail' study.id_study %}"
+                    <tr  data-href="{% url 'studyDetail' study.id_study %}"
                         onclick="window.location.href=this.dataset.href;">
-                        <td class="row-cell patient">{{ study.id_patient.first_name }} {{ study.id_patient.last_name }}
+                        <td>{{ study.id_patient.first_name }} {{ study.id_patient.last_name }}
                         </td>
-                        <td class="row-cell date">{{ study.date|date:"d/m/Y" }}</td>
-                        <td class="row-cell subject">
+                        <td>{{ study.date|date:"d/m/Y" }}</td>
+                        <td>
                             {% if study.id_report %}
                             {{ study.id_report.about }}
                             {% else %}
-                            <span style="color: #999;">Sin asunto</span>
+                            <span>Sin asunto</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="3" class="row-cell" style="text-align: center; color: #999;">No hay historial de
+                        <td colspan="3">No hay historial de
                             reportes.</td>
                     </tr>
                     {% endfor %}

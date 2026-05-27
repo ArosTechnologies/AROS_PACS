@@ -4,11 +4,11 @@
 
 {% block content %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/css/study_card.css' %}">
+
 
 <h1>Mis Estudios</h1>
 
-<div class="studies-grid">
+<div>
     {% for study in studies %}
         {% url 'patientsDashboard:studyDetail' study.id_study as study_detail_url %}
         {% if study.id_report and study.id_report.status == 'PRO' %}
@@ -19,7 +19,7 @@
             {% include "core/components/study_card.html" with study_url=study_detail_url pacs_url=study.pacs_url date=study.date title="Pendiente de reporte" study_id=study.id_study status="pending" blocked=True %}
         {% endif %}
     {% empty %}
-        <p style="text-align: center; width: 100%; color: #999;">No tienes estudios registrados.</p>
+        <p>No tienes estudios registrados.</p>
     {% endfor %}
 </div>
 {% endblock %}
