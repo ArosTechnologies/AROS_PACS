@@ -1,0 +1,92 @@
+{% extends 'doctorsDashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div>
+    <!-- Navbar is in base.html -->
+
+    
+
+    <div class="flex flex-col gap-lg">
+        <div class="flex justify-between items-center pb-md border-b">
+            <h1 class="headline-lg m-0">Estudios Pendientes</h1>
+            <div class="flex gap-sm">
+                <button class="btn btn-secondary btn-icon" id="listViewBtn" aria-label="List View">
+                    <img src="{% static 'core/assets/icons/stack_icon.svg' %}" alt="List View" width="24" height="24">
+                </button>
+                <button class="btn btn-secondary btn-icon" id="gridViewBtn" aria-label="Grid View">
+                    <img src="{% static 'core/assets/icons/grid_icon.svg' %}" alt="Grid View" width="24" height="24">
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid View Container -->
+        <div id="studiesGridView" class="md:grid md:grid-cols-2 lg:grid-cols-3 gap-md" style="display: grid;">
+            {% for study in studies %}
+            {% url 'studyReportCreate' study.pk as report_url %}
+
+            {% with first=study.id_patient.first_name last=study.id_patient.last_name %}
+            {% if study.pacs_url %}
+            {% include "core/components/study_card.html" with study_url=report_url pacs_url=study.pacs_url title=first|add:" "|add:last study_id=study.pk %}
+            {% else %}
+            {% include "core/components/study_card.html" with pacs_url="" title=first|add:" "|add:last study_id=study.pk blocked=True images_pending=True status="images_pending" %}
+            {% endif %}
+            {% endwith %}
+
+            {% empty %}
+            <div class="card text-center text-secondary py-lg md:col-span-2 lg:col-span-3">
+                <p class="body-md m-0">No hay estudios pendientes.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- List View Container (Hidden by default) -->
+        <div id="studiesListView" class="flex flex-col gap-md" style="display: none;">
+            {% for study in studies %}
+            {% url 'studyReportCreate' study.pk as report_url %}
+            {% with first=study.id_patient.first_name last=study.id_patient.last_name %}
+            {% include "core/components/study_list_item.html" with study_url=report_url title=first|add:" "|add:last date=study.date study_id=study.pk %}
+            {% endwith %}
+            {% empty %}
+            <div class="card text-center text-secondary py-lg">
+                <p class="body-md m-0">No hay estudios pendientes.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const gridBtn = document.getElementById('gridViewBtn');
+        const listBtn = document.getElementById('listViewBtn');
+        const gridView = document.getElementById('studiesGridView');
+        const listView = document.getElementById('studiesListView');
+
+        function setView(view) {
+            if (view === 'grid') {
+                gridView.style.display = 'grid';
+                listView.style.display = 'none';
+                gridBtn.classList.add('active');
+                listBtn.classList.remove('active');
+                localStorage.setItem('pendingStudiesView', 'grid');
+            } else {
+                gridView.style.display = 'none';
+                listView.style.display = 'block';
+                gridBtn.classList.remove('active');
+                listBtn.classList.add('active');
+                localStorage.setItem('pendingStudiesView', 'list');
+            }
+        }
+
+        gridBtn.addEventListener('click', () => setView('grid'));
+        listBtn.addEventListener('click', () => setView('list'));
+
+        // Load saved preference
+        const savedView = localStorage.getItem('pendingStudiesView');
+        if (savedView === 'list') {
+            setView('list');
+        }
+    });
+</script>
+{% endblock %}

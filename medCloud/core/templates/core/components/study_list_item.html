@@ -1,0 +1,38 @@
+<!-- 
+    Study List Item Component 
+    Expects context variables:
+    - study_url: URL for the detail view
+    - title: Patient Name or Main Title
+    - date: Date object or string
+    - subtitle: Optional subtitle
+    - status: Optional status string
+-->
+<a href="{{ study_url }}"  data-study-id="{{ study_id }}">
+    <div>
+        <h3>{{ title }}</h3>
+        <div>
+            {% if date %}
+            <span>
+                
+                {{ date|date:"d M Y" }}
+            </span>
+            {% endif %}
+
+            {% if subtitle %}
+            <span>{{ subtitle }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        {% if status %}
+        {% if status == 'completed' %}
+        <span>Completado</span>
+        {% elif status == 'pending' %}
+        <span>Pendiente</span>
+        {% endif %}
+        {% endif %}
+
+        
+    </div>
+</a>

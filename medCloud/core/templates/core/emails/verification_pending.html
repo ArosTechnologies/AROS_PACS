@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifica tu correo - MedCloud</title>
+    
+    
+    
+    
+    
+</head>
+
+<body>
+    <div>
+        <div>
+            <div>
+                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" 
+                    alt="MedCloud">
+                <div>📧</div>
+                <h2>Revisa tu correo electrónico</h2>
+            </div>
+            <p>
+                Hemos enviado un enlace de verificación a tu correo electrónico.
+                Por favor, revisa tu bandeja de entrada (y la carpeta de spam) y haz clic en el enlace para activar tu
+                cuenta.
+            </p>
+            <p>
+                El enlace expira en 24 horas.
+            </p>
+            <a href="{% url 'login' %}">← Volver al inicio de sesión</a>
+        </div>
+    </div>
+</body>
+
+</html>

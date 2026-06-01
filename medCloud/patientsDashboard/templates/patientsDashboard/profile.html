@@ -1,0 +1,66 @@
+{% extends 'patientsDashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div>
+    <div>
+        <h1>Mi Perfil</h1>
+        <p>Información personal</p>
+    </div>
+
+    <div>
+        <div>
+            <div>
+                <div>
+                    {% if patient.profile_picture %}
+                    <img src="{{ patient.profile_picture.url }}" alt="Avatar">
+                    {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ patient.first_name|default:'P' }}&background=0D8ABC&color=fff&rounded=true&bold=true&size=100"
+                        alt="Avatar">
+                    {% endif %}
+                </div>
+                <button class="btn btn-primary" type="button" onclick="openProfileCropper()">
+                    
+                    Actualizar Foto
+                </button>
+            </div>
+
+            <div>
+                <label>Nombre</label>
+                <div>{{ patient.first_name }}</div>
+            </div>
+
+            <div>
+                <label>Apellidos</label>
+                <div>{{ patient.last_name }}</div>
+            </div>
+
+            <div>
+                <label>Correo Electrónico</label>
+                <div>{{ patient.email }}</div>
+            </div>
+
+            <div>
+                <label>Teléfono</label>
+                <div>{{ patient.phone }}</div>
+            </div>
+
+            <div>
+                <label>Dirección</label>
+                <div>{{ patient.address }}</div>
+            </div>
+
+            <div>
+                <label>Género</label>
+                <div>{{ patient.get_gender_display }}</div>
+            </div>
+        </div>
+
+        <div>
+            <a href="{% url 'patientsDashboard:profile_edit' %}">Actualizar Datos</a>
+        </div>
+    </div>
+</div>
+
+{% include 'core/components/profile_upload_modal.html' %}
+{% endblock %}

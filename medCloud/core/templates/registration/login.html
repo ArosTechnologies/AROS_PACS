@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MedCloud</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{% static 'core/css/design-system.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/login.css' %}">
+</head>
+<body class="login-page-body">
+    <main class="login-layout">
+        <!-- Left Side: Login Form -->
+        <section class="login-left">
+            <div class="login-content">
+                <div class="mb-lg">
+                    <div class="tag-badge">MEDCLOUD_AROS</div>
+                    <h1 class="display-lg m-0 login-header-title">Bienvenido<br>de nuevo</h1>
+                    <p class="body-md login-header-subtitle">Autentícate para acceder a MedCloud.</p>
+                </div>
+                
+                <form method="post" class="login-form">
+                    {% csrf_token %}
+                    {% if form.errors %}
+                    <div class="chip chip-error p-sm text-center justify-center w-full login-error-chip">
+                        Usuario o contraseña incorrectos.
+                    </div>
+                    {% endif %}
+
+                    <!-- Email Input -->
+                    <div class="login-input-group">
+                        <label class="label-bold" for="id_username">Correo Electrónico</label>
+                        <div class="input-wrapper">
+                            <span class="material-symbols-outlined input-icon" style="font-variation-settings: 'FILL' 1;">mail</span>
+                            <input class="login-input" type="email" name="username" placeholder="ejemplo@correo.com" required id="id_username">
+                        </div>
+                    </div>
+                    
+                    <!-- Password Input -->
+                    <div class="login-input-group">
+                        <div class="login-password-header">
+                            <label class="label-bold m-0" for="id_password">Contraseña</label>
+                            <a href="{% url 'password_reset' %}" class="label-bold m-0 login-password-link">¿Olvidaste tu contraseña?</a>
+                        </div>
+                        <div class="input-wrapper">
+                            <span class="material-symbols-outlined input-icon" style="font-variation-settings: 'FILL' 1;">lock</span>
+                            <input class="login-input" type="password" name="password" placeholder="••••••••" required id="id_password">
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button class="submit-btn" type="submit">
+                        <span>Iniciar Sesión</span>
+                        <span class="material-symbols-outlined submit-btn-icon">arrow_forward</span>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="bg-decoration">
+                <div class="bg-dots"></div>
+            </div>
+        </section>
+        
+        <!-- Right Side: Registration Paths -->
+        <section class="login-right">
+            <div class="bg-abstract"></div>
+            
+            <div class="registration-content">
+                <div class="mb-md">
+                    <h2 class="headline-lg m-0 registration-header">Nuevo<br>Aqui?</h2>
+                    <p class="body-md registration-subtitle">Selecciona tu función para registrarte.</p>
+                </div>
+                
+                <!-- Patient Registration Card -->
+                <a href="{% url 'patientsDashboard:signup' %}" class="path-card">
+                    <div class="path-badge">PATH_01</div>
+                    <div class="path-card-content">
+                        <div>
+                            <h3 class="headline-md m-0 path-card-title">Paciente Nuevo</h3>
+                            <p class="body-md path-card-desc">Establece un nuevo perfil clínico en la base de datos.</p>
+                        </div>
+                        <span class="material-symbols-outlined path-card-icon">personal_injury</span>
+                    </div>
+                    <div class="path-card-footer label-bold">
+                        <span>Crear cuenta</span>
+                        <span class="material-symbols-outlined path-card-footer-icon">arrow_right_alt</span>
+                    </div>
+                </a>
+                
+                <!-- Physician Registration Card -->
+                <a href="{% url 'associate_signup' %}" class="path-card">
+                    <div class="path-badge">PATH_02</div>
+                    <div class="path-card-content">
+                        <div>
+                            <h3 class="headline-md m-0 path-card-title">Médico Asociado</h3>
+                            <p class="body-md path-card-desc">Solicita credenciales para el acceso a datos y pacientes.</p>
+                        </div>
+                        <span class="material-symbols-outlined path-card-icon">stethoscope</span>
+                    </div>
+                    <div class="path-card-footer label-bold">
+                        <span>Solicitar acceso</span>
+                        <span class="material-symbols-outlined path-card-footer-icon">arrow_right_alt</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+    
+    {% include 'core/components/footer.html' %}
+</body>
+</html>

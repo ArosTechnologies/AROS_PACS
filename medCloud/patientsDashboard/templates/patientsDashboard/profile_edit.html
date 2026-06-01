@@ -1,0 +1,83 @@
+{% extends 'patientsDashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div>
+    <div>
+        <h1>Editar Perfil</h1>
+        <p>Actualiza tu información personal</p>
+    </div>
+
+    <div>
+        <form method="post">
+            {% csrf_token %}
+
+            <div>
+                <div>
+                    <label for="id_first_name">Nombre</label>
+                    <input class="input-field mb-md" type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"
+                         id="id_first_name" required>
+                    {% if form.first_name.errors %}
+                    <div>{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_last_name">Apellidos</label>
+                    <input class="input-field mb-md" type="text" name="last_name" value="{{ form.last_name.value|default:'' }}"
+                         id="id_last_name" required>
+                    {% if form.last_name.errors %}
+                    <div>{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_email">Correo Electrónico</label>
+                    <input class="input-field mb-md" type="email" name="email" value="{{ form.email.value|default:'' }}" 
+                        id="id_email" required>
+                    {% if form.email.errors %}
+                    <div>{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_phone">Teléfono</label>
+                    <input class="input-field mb-md" type="text" name="phone" value="{{ form.phone.value|default:'' }}" 
+                        id="id_phone" required>
+                    {% if form.phone.errors %}
+                    <div>{{ form.phone.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_address">Dirección</label>
+                    <input class="input-field mb-md" type="text" name="address" value="{{ form.address.value|default:'' }}" 
+                        id="id_address" required>
+                    {% if form.address.errors %}
+                    <div>{{ form.address.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_gender">Género</label>
+                    <select name="gender"  id="id_gender">
+                        {% for value, label in form.fields.gender.choices %}
+                        <option value="{{ value }}" {% if form.gender.value == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.gender.errors %}
+                    <div>{{ form.gender.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <a href="{% url 'patientsDashboard:profile' %}">Cancelar</a>
+                <button class="btn btn-primary" type="submit">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

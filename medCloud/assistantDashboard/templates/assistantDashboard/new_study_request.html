@@ -1,0 +1,247 @@
+{% extends 'assistantDashboard/base.html' %}
+{% load static %}
+
+{% block title %}Nueva Solicitud - Asistente{% endblock %}
+
+{% block content %}
+<div>
+    <div>
+        <h1>Nueva Solicitud de Estudio</h1>
+    </div>
+
+    <div>
+        {% if form.non_field_errors %}
+        <div>
+            {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" id="studyRequestForm">
+            {% csrf_token %}
+
+            <!-- Patient Search -->
+            <div>
+                <label>Paciente *</label>
+                <div id="patientSearchWrapper">
+                    <input class="input-field mb-md" type="text" id="patientSearchInput" placeholder="Buscar por nombre, correo o teléfono..." autocomplete="off">
+                    <input type="hidden" name="id_patient" id="patientIdHidden">
+                    <div id="searchResults"></div>
+                </div>
+                <div id="selectedPatient">
+                    <span id="selectedPatientName"></span>
+                    <button class="btn btn-primary" type="button" id="clearPatient">✕</button>
+                </div>
+
+                <!-- Inline Create Patient Form (hidden by default) -->
+                <div id="createPatientForm">
+                    <h3>Registrar Nuevo Paciente</h3>
+                    <div id="createFormError"></div>
+                    <div>
+                        <div>
+                            <label>Nombre *</label>
+                            <input class="input-field mb-md" type="text" id="newPatientFirstName" placeholder="Nombre">
+                        </div>
+                        <div>
+                            <label>Apellido *</label>
+                            <input class="input-field mb-md" type="text" id="newPatientLastName" placeholder="Apellido">
+                        </div>
+                    </div>
+                    <div>
+                        <div>
+                            <label>Correo *</label>
+                            <input class="input-field mb-md" type="email" id="newPatientEmail" placeholder="correo@ejemplo.com">
+                        </div>
+                        <div>
+                            <label>Teléfono *</label>
+                            <input class="input-field mb-md" type="text" id="newPatientPhone" placeholder="555-0000">
+                        </div>
+                    </div>
+                    <div>
+                        <div>
+                            <label>Género</label>
+                            <select id="newPatientGender">
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                                <option value="O" selected>Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Dirección</label>
+                            <input class="input-field mb-md" type="text" id="newPatientAddress" placeholder="Dirección">
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" type="button" id="btnCreatePatient">Crear Paciente</button>
+                        <button class="btn btn-primary" type="button" id="btnCancelCreate">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Fields -->
+            {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div>
+                    {% for error in field.errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div>
+                <button class="btn btn-primary" type="submit">Crear Solicitud</button>
+                <a href="{% url 'assistant_dashboard' %}">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('patientSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    const hiddenInput = document.getElementById('patientIdHidden');
+    const selectedDiv = document.getElementById('selectedPatient');
+    const selectedName = document.getElementById('selectedPatientName');
+    const clearBtn = document.getElementById('clearPatient');
+    const searchWrapper = document.getElementById('patientSearchWrapper');
+    const createForm = document.getElementById('createPatientForm');
+    const createError = document.getElementById('createFormError');
+    let debounceTimer;
+    let lastQuery = '';
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const query = this.value.trim();
+        lastQuery = query;
+
+        if (query.length < 2) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        debounceTimer = setTimeout(() => {
+            fetch(`{% url 'patient_search_api' %}?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    searchResults.innerHTML = '';
+
+                    if (data.length === 0) {
+                        searchResults.innerHTML = '<div>No se encontraron pacientes.</div>';
+                    } else {
+                        data.forEach(p => {
+                            const item = document.createElement('div');
+                            item.innerHTML = `
+                                <div>${p.first_name} ${p.last_name}</div>
+                                <div>${p.email || ''}${p.phone ? ' · ' + p.phone : ''}</div>
+                            `;
+                            item.addEventListener('click', () => selectPatient(p));
+                            searchResults.appendChild(item);
+                        });
+                    }
+
+                    // Always show "Create new patient" option at the bottom
+                    const createOption = document.createElement('div');
+                    createOption.innerHTML = `
+                        <span>+</span>
+                        <div>
+                            <div>Registrar nuevo paciente</div>
+                            <div>El paciente no existe en el sistema</div>
+                        </div>
+                    `;
+                    createOption.addEventListener('click', () => showCreateForm());
+                    searchResults.appendChild(createOption);
+                });
+        }, 300);
+    });
+
+    function selectPatient(patient) {
+        hiddenInput.value = patient.id;
+        selectedName.textContent = `${patient.first_name} ${patient.last_name} — ${patient.email || ''}`;
+        searchWrapper.style.display = 'none';
+        createForm.style.display = 'none';
+        selectedDiv.style.display = 'flex';
+        searchResults.innerHTML = '';
+    }
+
+    function showCreateForm() {
+        searchResults.innerHTML = '';
+        searchWrapper.style.display = 'none';
+        createForm.style.display = 'block';
+        createError.style.display = 'none';
+        // Pre-fill name if the search query looks like a name
+        const parts = lastQuery.split(' ');
+        if (parts.length>= 1) document.getElementById('newPatientFirstName').value = parts[0] || '';
+        if (parts.length>= 2) document.getElementById('newPatientLastName').value = parts.slice(1).join(' ') || '';
+        document.getElementById('newPatientFirstName').focus();
+    }
+
+    clearBtn.addEventListener('click', function() {
+        hiddenInput.value = '';
+        searchInput.value = '';
+        searchWrapper.style.display = 'block';
+        selectedDiv.style.display = 'none';
+        createForm.style.display = 'none';
+        searchInput.focus();
+    });
+
+    document.getElementById('btnCancelCreate').addEventListener('click', function() {
+        createForm.style.display = 'none';
+        searchWrapper.style.display = 'block';
+        searchInput.focus();
+    });
+
+    document.getElementById('btnCreatePatient').addEventListener('click', function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Creando...';
+        createError.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('first_name', document.getElementById('newPatientFirstName').value);
+        formData.append('last_name', document.getElementById('newPatientLastName').value);
+        formData.append('email', document.getElementById('newPatientEmail').value);
+        formData.append('phone', document.getElementById('newPatientPhone').value);
+        formData.append('gender', document.getElementById('newPatientGender').value);
+        formData.append('address', document.getElementById('newPatientAddress').value);
+
+        fetch('{% url "create_patient_api" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = 'Crear Paciente';
+
+            if (data.success) {
+                selectPatient(data.patient);
+            } else {
+                createError.innerHTML = data.errors.map(e => `<p>${e}</p>`).join('');
+                createError.style.display = 'block';
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = 'Crear Paciente';
+            createError.innerHTML = '<p>Error de conexión.</p>';
+            createError.style.display = 'block';
+        });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchWrapper.contains(e.target) && !createForm.contains(e.target)) {
+            searchResults.innerHTML = '';
+        }
+    });
+});
+</script>
+{% endblock %}

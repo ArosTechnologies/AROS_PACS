@@ -1,0 +1,51 @@
+{% if blocked %}
+<div  data-study-id="{{ study_id }}">
+    {% else %}
+    <a href="{{ study_url }}"  data-study-id="{{ study_id }}">
+        {% endif %}
+        {% if pacs_url %}
+        <iframe  src="{{ pacs_url }}" scrolling="no" frameborder="0"></iframe>
+        {% else %}
+        <div>
+            
+            <span>Esperando imágenes del PACS...</span>
+        </div>
+        {% endif %}
+        <div></div>
+        {% if blocked %}
+        <div>
+            {% if images_pending %}
+            <span>Imágenes Pendientes</span>
+            {% else %}
+            <span>En Progreso</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        <div>
+            {% if date %}
+            <p>{{ date|date:"d M Y" }}</p>
+            {% endif %}
+
+            <p>{{ title }}</p>
+
+            {% if subtitle %}
+            <p>{{ subtitle }}</p>
+            {% endif %}
+
+            {% if status %}
+            {% if status == 'completed' %}
+            <span>Completado</span>
+            {% elif status == 'pending' %}
+            <span>Pendiente</span>
+            {% elif status == 'in_progress' %}
+            <span>En Progreso</span>
+            {% elif status == 'images_pending' %}
+            <span>Imágenes Pendientes</span>
+            {% endif %}
+            {% endif %}
+        </div>
+        {% if blocked %}
+</div>
+{% else %}
+</a>
+{% endif %}

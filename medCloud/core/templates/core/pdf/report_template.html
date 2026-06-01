@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report.about }}</title>
+    {{ style_tag|safe }}
+</head>
+
+<body>
+    <!-- Background Image Layer (Fixed so it repeats on all pages) -->
+    <div>
+        <img src="{{ bg_data_uri }}">
+    </div>
+
+    <!-- Logo Layer -->
+    <div>
+        <img src="{{ logo_data_uri }}" alt="MedCloud Logo">
+    </div>
+
+    <!-- Metadata Block Right Aligned -->
+    <div>
+        <div>SRA. {{ patient.first_name|upper }} {{ patient.last_name|upper }}</div>
+        {% if associate_doctor %}
+        <div>DRA. {{ associate_doctor.first_name|upper }} {{ associate_doctor.last_name|upper }}
+        </div>
+        {% endif %}
+        <div>{{ report.date|date:"F j \d\e\l Y"|upper }}</div>
+    </div>
+
+    <!-- Report About Title -->
+    <div>
+        {{ report.about|upper }}
+    </div>
+
+    <!-- Patient Background Description -->
+    <div>
+        {{ report.patients_description }}
+    </div>
+
+    <!-- Findings Section -->
+    <div>
+        {{ report.findings|linebreaks }}
+    </div>
+
+    <!-- Conclusion Section -->
+    {% if report.conclusions %}
+    <div>
+        <div>CONCLUSIÓN:</div>
+        {{ report.conclusions|linebreaks }}
+    </div>
+    {% endif %}
+
+    <!-- Recommendations Section -->
+    {% if report.recommendations %}
+    <div>
+        {{ report.recommendations|linebreaks }}
+    </div>
+    {% endif %}
+
+    <!-- Footer: Doctor Signature + Hardcoded Credentials + Contact -->
+    <div>
+        <div>
+            {% if signature_data_uri %}
+            <img src="{{ signature_data_uri }}" alt="Firma del Doctor">
+            {% endif %}
+            <p>DRA. {{ doctor.first_name|upper }} {{ doctor.last_name|upper }}</p>
+            <p>{{ doctor.specialty|upper }}</p>
+            <p>CÉDULA PROFESIONAL: {{ doctor.professional_id }}</p>
+        </div>
+
+        <div>
+            <div>Dra. Alma Evelia Moran González</div>
+            <div>MÉDICA RADIÓLOGA</div>
+
+            <table>
+                <tr>
+                    <td>
+                        <span>UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO</span><br>
+                        <span>D.G.P. 1138215</span>
+                    </td>
+                    <td>
+                        <span>UNIVERSIDAD DE GUANAJUATO</span><br>
+                        <span>CÉDULA DE ESPECIALIDAD AEIE-31312</span>
+                    </td>
+                </tr>
+            </table>
+
+            <div>
+                SUB-ESPECIALISTA EN ULTRASONIDO<br>
+                CERTIFICADA POR EL C.M.R.I. FOLIO 2090<br>
+                CALIFICACIÓN AGREGADA EN MAMA C.M.R.I. 3465
+            </div>
+        </div>
+
+        <div>
+            <span>Avenida León 428 Int. 403, Col. Jardines del Moral</span>
+            <span>Tel. 477 636 76 94 / 95</span>
+            <span>Whatsapp 477 180 01 46</span>
+        </div>
+    </div>
+</body>
+
+</html>

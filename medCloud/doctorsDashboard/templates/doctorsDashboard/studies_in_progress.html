@@ -1,0 +1,84 @@
+{% extends 'doctorsDashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div>
+    <!-- Navbar is in base.html -->
+
+    
+
+    <div>
+        <div>
+            <h1>Estudios en Progreso</h1>
+            <div>
+                <button class="btn btn-primary"  id="listViewBtn" aria-label="List View">
+                    <img src="{% static 'core/assets/icons/stack_icon.svg' %}" alt="List View" width="24" height="24">
+                </button>
+                <button class="btn btn-primary"  id="gridViewBtn" aria-label="Grid View">
+                    <img src="{% static 'core/assets/icons/grid_icon.svg' %}" alt="Grid View" width="24" height="24">
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid View Container -->
+        <div  id="studiesGridView">
+            {% for study in studies %}
+            {% url 'studyReportCreate' study.pk as report_url %}
+
+            {% with first=study.id_patient.first_name last=study.id_patient.last_name %}
+            {% include "core/components/study_card.html" with study_url=report_url pacs_url=study.pacs_url title=first|add:" "|add:last study_id=study.pk %}
+            {% endwith %}
+
+            {% empty %}
+            <p>No tienes estudios en progreso.</p>
+            {% endfor %}
+        </div>
+
+        <!-- List View Container (Hidden by default) -->
+        <div  id="studiesListView">
+            {% for study in studies %}
+                {% url 'studyReportCreate' study.pk as report_url %}
+                {% with first=study.id_patient.first_name last=study.id_patient.last_name %}
+                    {% include "core/components/study_list_item.html" with study_url=report_url title=first|add:" "|add:last date=study.date study_id=study.pk %}
+                {% endwith %}
+            {% empty %}
+            <p>No tienes estudios en progreso.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const gridBtn = document.getElementById('gridViewBtn');
+        const listBtn = document.getElementById('listViewBtn');
+        const gridView = document.getElementById('studiesGridView');
+        const listView = document.getElementById('studiesListView');
+
+        function setView(view) {
+            if (view === 'grid') {
+                gridView.style.display = 'grid';
+                listView.style.display = 'none';
+                gridBtn.classList.add('active');
+                listBtn.classList.remove('active');
+                localStorage.setItem('inProgressStudiesView', 'grid');
+            } else {
+                gridView.style.display = 'none';
+                listView.style.display = 'block';
+                gridBtn.classList.remove('active');
+                listBtn.classList.add('active');
+                localStorage.setItem('inProgressStudiesView', 'list');
+            }
+        }
+
+        gridBtn.addEventListener('click', () => setView('grid'));
+        listBtn.addEventListener('click', () => setView('list'));
+
+        // Load saved preference
+        const savedView = localStorage.getItem('inProgressStudiesView');
+        if (savedView === 'list') {
+            setView('list');
+        }
+    });
+</script>
+{% endblock %}

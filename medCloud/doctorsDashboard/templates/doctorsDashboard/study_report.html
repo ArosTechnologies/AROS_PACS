@@ -1,0 +1,217 @@
+{% extends 'doctorsDashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div>
+    <!-- Navbar is already in base.html, but we need to ensure the container padding accounts for it -->
+
+    <div>
+        <!-- Left Side - Iframe for Study -->
+        <div>
+            <!-- Iframe for the DICOM Viewer -->
+            <iframe src="{{ study.pacs_url }}"  frameborder="0" allow="fullscreen"></iframe>
+        </div>
+
+        <!-- Draggable Handle -->
+        <div  id="dragHandle"></div>
+
+        <!-- Right Side - Report Form -->
+        <div>
+            <form method="post">
+                {% csrf_token %}
+
+                <div>
+                    <label>Asunto del estudio</label>
+                    <div>
+                        {{ form.about }}
+                        <!-- Assuming form.about renders <input class="input-field mb-md" ...> via widget tweaks or we manually render it -->
+                    </div>
+                </div>
+
+                <div>
+                    <label>Descripción del paciente</label>
+                    <div>
+                        {{ form.patients_description }}
+                    </div>
+                </div>
+
+                <div>
+                    <label>Hallazgos</label>
+                    <div>
+                        {{ form.findings }}
+                    </div>
+                </div>
+
+                <div>
+                    <label>Conclusiones del estudio</label>
+                    <div>
+                        {{ form.conclusions }}
+                    </div>
+                </div>
+
+                <div>
+                    <label>Recomendaciones al paciente</label>
+                    <div>
+                        {{ form.recommendations }}
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" type="submit">
+                    Generar Reporte
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Form Styling Logic ---
+        const inputs = document.querySelectorAll('.input-wrapper input');
+        inputs.forEach(input => input.classList.add('form-input'));
+
+        const textareas = document.querySelectorAll('.textarea-wrapper textarea');
+        textareas.forEach(textarea => {
+            textarea.classList.add('form-textarea');
+            textarea.classList.add('form-input');
+        });
+
+        // --- Resizable Split Pane Logic ---
+        const resizer = document.getElementById('dragHandle');
+        const leftSide = document.querySelector('.image-section');
+        const rightSide = document.querySelector('.form-section');
+        const container = document.querySelector('.report-content-container');
+        const iframe = document.querySelector('.study-image'); // Select the iframe
+
+        let x = 0;
+        let leftWidth = 0;
+
+        const mouseDownHandler = function (e) {
+            x = e.clientX;
+            leftWidth = leftSide.getBoundingClientRect().width;
+
+            // Enable resizing interactions
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+
+            // Temporarily disable pointer events on iframe to prevent it from capturing the mouse
+            if (iframe) {
+                iframe.style.pointerEvents = 'none';
+            }
+
+            // Optional: Change cursor globally during drag
+            document.body.style.cursor = 'col-resize';
+            leftSide.style.userSelect = 'none';
+            rightSide.style.userSelect = 'none';
+        };
+
+        const mouseMoveHandler = function (e) {
+            const dx = e.clientX - x;
+            const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
+
+            // Limit the resize range (e.g., between 20% and 80%)
+            if (newLeftWidth> 20 && newLeftWidth < 80) {
+                leftSide.style.width = `${newLeftWidth}%`;
+                // rightSide flex:1 will automatically take remaining space
+            }
+        };
+
+        const mouseUpHandler = function () {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+
+            // Re-enable pointer events on iframe
+            if (iframe) {
+                iframe.style.pointerEvents = 'auto';
+            }
+
+            document.body.style.cursor = 'default';
+            leftSide.style.userSelect = 'auto';
+            rightSide.style.userSelect = 'auto';
+        };
+
+        resizer.addEventListener('mousedown', mouseDownHandler);
+
+        // --- Seamless Interaction Logic ---
+        // Automatically focus the iframe when mouse enters the image section
+        leftSide.addEventListener('mouseenter', function () {
+            if (document.activeElement !== iframe) {
+                iframe.focus();
+            }
+        });
+
+        // Return focus to main window when leaving, so shortcuts/typing work in form
+        leftSide.addEventListener('mouseleave', function () {
+            window.focus();
+        });
+
+        // --- Locking & Drafts Logic ---
+        const studyId = "{{ study.id_study }}";
+        const form = document.querySelector('form');
+        const storageKey = `draft_study_${studyId}`;
+        let isLocked = false; // Track if we've already sent the lock request
+
+        // 1. Load Draft from LocalStorage
+        const savedDraft = localStorage.getItem(storageKey);
+        if (savedDraft) {
+            const data = JSON.parse(savedDraft);
+            Object.keys(data).forEach(key => {
+                const field = form.elements[key];
+                if (field) field.value = data[key];
+            });
+            // If we restored data, we should probably assume lock is needed or already active.
+            // But we'll wait for user interaction or save to be safe, unless we want to auto-lock on load.
+            // Strategy: Trigger lock if there's a draft, because they clearly started working.
+            lockStudy();
+        }
+
+        // 2. Save Draft & Trigger Lock on Input
+        form.addEventListener('input', function (e) {
+            // A. Trigger Lock (once per session)
+            if (!isLocked) {
+                lockStudy();
+            }
+
+            // B. Save to LocalStorage
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                // Exclude csrf token from draft
+                if (key !== 'csrfmiddlewaretoken') {
+                    data[key] = value;
+                }
+            });
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        });
+
+        // 3. Clear Draft on Submit
+        form.addEventListener('submit', function () {
+            localStorage.removeItem(storageKey);
+        });
+
+        function lockStudy() {
+            if (isLocked) return;
+
+            fetch(`/doctor/lockStudy/${studyId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        isLocked = true;
+                        console.log('Study locked successfully');
+                    } else {
+                        console.warn('Failed to lock study:', data.message);
+                        // Optional: Alert user if lock failed (e.g. taken by someone else)
+                    }
+                })
+                .catch(err => console.error('Error locking study:', err));
+        }
+    });
+</script>
+{% endblock %}

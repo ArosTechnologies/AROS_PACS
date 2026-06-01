@@ -1,0 +1,71 @@
+{% extends 'doctorsDashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div>
+    <div>
+        <div>
+            <div>
+                <div>
+                    {% if doctor.profile_picture %}
+                    <img src="{{ doctor.profile_picture.url }}" alt="Avatar">
+                    {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ doctor.user.first_name }}+{{ doctor.user.last_name }}&background=0D8ABC&color=fff&rounded=true&bold=true&size=270"
+                        alt="Dr. {{ doctor.name }} {{ doctor.last_name }}">
+                    {% endif %}
+                </div>
+                <button class="btn btn-primary" type="button" onclick="openProfileCropper()">
+                    
+                    Actualizar Foto
+                </button>
+            </div>
+            <div>
+                <h2>Dr. {{ doctor.name }} {{ doctor.last_name }}</h2>
+                <p>{{ doctor.email }}</p>
+                <p>{{ doctor.university }}</p>
+                <p>Cedula: {{ doctor.professional_id }}</p>
+                <p>Especialidad: {{ doctor.specialty }}</p>
+            </div>
+        </div>
+
+        <!-- History Table Section -->
+        <div>
+            <h3>
+                Historial de Reportes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Fecha</th>
+                        <th>Asunto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for study in history_studies %}
+                    <tr  data-href="{% url 'studyDetail' study.id_study %}"
+                        onclick="window.location.href=this.dataset.href;">
+                        <td>{{ study.id_patient.first_name }} {{ study.id_patient.last_name }}
+                        </td>
+                        <td>{{ study.date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if study.id_report %}
+                            {{ study.id_report.about }}
+                            {% else %}
+                            <span>Sin asunto</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">No hay historial de
+                            reportes.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% include 'core/components/profile_upload_modal.html' %}
+{% endblock %}
