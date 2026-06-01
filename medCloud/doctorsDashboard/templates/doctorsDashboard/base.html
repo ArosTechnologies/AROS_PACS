@@ -5,39 +5,40 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}MedCloud{% endblock %}</title>
-    <!-- Use the local app css -->
-    
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'core/css/design-system.css' %}">
     {% block head %}{% endblock %}
 </head>
 
 <body>
     <header>
-        <nav>
+        <nav class="container flex justify-between items-center mt-md mb-lg">
             <!-- Left: Logo -->
             <div>
-                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud">
+                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud" style="height: 40px;">
             </div>
 
             <!-- Center: Navigation Links -->
             <div>
-                <ul>
-                    <li><a href="{% url 'pendingStudies' %}">Estudios Pendientes</a></li>
-                    <li><a href="{% url 'studiesInProgress' %}">Estudios en Progreso</a></li>
+                <ul class="flex items-center gap-md" style="list-style: none; margin: 0; padding: 0;">
+                    <li><a href="{% url 'pendingStudies' %}" class="btn btn-secondary">Estudios Pendientes</a></li>
+                    <li><a href="{% url 'studiesInProgress' %}" class="btn btn-secondary">Estudios en Progreso</a></li>
                 </ul>
             </div>
 
             <!-- Right: User Info -->
-            <div>
+            <div class="flex items-center gap-md">
                 <!-- Use a custom logout view that handles cleanup -->
-                <a href="{% url 'doctor_logout' %}"  id="logoutBtn">Cerrar Sesión</a>
-                <a href="{% url 'myProfile' %}">
-                    <span>Bienvenido, Dr. {{ user.last_name }}</span>
+                <a href="{% url 'doctor_logout' %}" id="logoutBtn" class="btn btn-outlined">Cerrar Sesión</a>
+                <a href="{% url 'myProfile' %}" class="flex items-center gap-sm" style="text-decoration: none; color: var(--on-surface);">
+                    <span class="label-md" style="margin:0;">Bienvenido, Dr. {{ user.last_name }}</span>
                     {% if user.reporting_doctor_profile.profile_picture %}
-                    <img src="{{ user.reporting_doctor_profile.profile_picture.url }}" alt="Profile">
+                    <img src="{{ user.reporting_doctor_profile.profile_picture.url }}" alt="Profile" style="width:32px; height:32px; border-radius:50%;">
                     {% else %}
                     <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:'Doc' }}&background=0D8ABC&color=fff&rounded=true&bold=true"
-                        alt="Profile">
+                        alt="Profile" style="width:32px; height:32px; border-radius:50%;">
                     {% endif %}
                 </a>
             </div>
@@ -76,7 +77,7 @@
         });
     </script>
 
-    <main>
+    <main class="main-content container">
         {% block content %}
         {% endblock %}
     </main>

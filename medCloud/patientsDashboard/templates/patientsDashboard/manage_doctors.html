@@ -15,7 +15,7 @@
     <div>
         <label>Buscar Doctor Asociado</label>
         <div  id="searchWrapper">
-            <input type="text"  id="doctorSearchInput" placeholder="Buscar por nombre..."
+            <input class="input-field mb-md" type="text"  id="doctorSearchInput" placeholder="Buscar por nombre..."
                 autocomplete="off">
             <div  id="searchResults"></div>
         </div>
@@ -47,7 +47,7 @@
                         </div>
                     </div>
                 </div>
-                <button  data-doctor-id="{{ doc.pk }}">✕ Revocar</button>
+                <button class="btn btn-primary"  data-doctor-id="{{ doc.pk }}">✕ Revocar</button>
             </div>
             {% empty %}
             <div  id="emptyState">
@@ -168,7 +168,7 @@
                             </div>
                         </div>
                     </div>
-                    <button  data-doctor-id="${doctorId}">✕ Revocar</button>
+                    <button class="btn btn-primary"  data-doctor-id="${doctorId}">✕ Revocar</button>
                 `;
                         doctorsList.appendChild(card);
                         updateCount(1);

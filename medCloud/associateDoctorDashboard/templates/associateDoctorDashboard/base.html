@@ -6,34 +6,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MedCloud - Médico Asociado{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'core/css/design-system.css' %}">
     {% block head %}{% endblock %}
 </head>
 
 <body>
     <header>
-        <nav>
+        <nav class="container flex justify-between items-center mt-md mb-lg">
             <div>
-                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud">
+                <img src="{% static 'core/assets/img/logos/medCloud_logo.png' %}" alt="MedCloud" style="height: 40px;">
             </div>
 
-            <div>
-                <span>Portal de Médicos Asociados</span>
-                <a href="{% url 'associate_dashboard' %}">Inicio</a>
+            <div class="flex items-center gap-md">
+                <span class="label-md" style="margin:0;">Portal de Médicos Asociados</span>
+                <a href="{% url 'associate_dashboard' %}" class="btn btn-secondary">Inicio</a>
             </div>
 
-            <div>
-                <a href="{% url 'associate_logout' %}">Cerrar Sesión</a>
-                <a href="{% url 'associate_profile' %}">
-                    <div>
+            <div class="flex items-center gap-md">
+                <a href="{% url 'associate_logout' %}" class="btn btn-outlined">Cerrar Sesión</a>
+                <a href="{% url 'associate_profile' %}" class="flex items-center gap-sm" style="text-decoration: none; color: var(--on-surface);">
+                    <div class="flex items-center gap-sm">
                         {% if user.associate_doctor_profile %}
-                        <span>{{ user.associate_doctor_profile }}</span>
+                        <span class="label-md" style="margin:0;">{{ user.associate_doctor_profile }}</span>
                         {% else %}
-                        <span>{{ user.username }}</span>
+                        <span class="label-md" style="margin:0;">{{ user.username }}</span>
                         {% endif %}
                         {% if user.associate_doctor_profile.profile_picture %}
-                        <img src="{{ user.associate_doctor_profile.profile_picture.url }}" alt="Profile">
+                        <img src="{{ user.associate_doctor_profile.profile_picture.url }}" alt="Profile" style="width:32px; height:32px; border-radius:50%;">
                         {% else %}
-                        <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:'Doc' }}&background=0D8ABC&color=fff&rounded=true&bold=true" alt="Profile">
+                        <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:'Doc' }}&background=0D8ABC&color=fff&rounded=true&bold=true" alt="Profile" style="width:32px; height:32px; border-radius:50%;">
                         {% endif %}
                     </div>
                 </a>
@@ -41,7 +45,7 @@
         </nav>
     </header>
 
-    <main>
+    <main class="main-content container">
         {% block content %}
         {% endblock %}
     </main>

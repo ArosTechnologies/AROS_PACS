@@ -44,7 +44,7 @@
                 <div>${message}</div>
                 ${detail ? `<div>${detail}</div>` : ''}
             </div>
-            <button  onclick="this.parentElement.classList.add('ws-removing'); setTimeout(() => this.parentElement.remove(), 300)">✕</button>
+            <button class="btn btn-primary"  onclick="this.parentElement.classList.add('ws-removing'); setTimeout(() => this.parentElement.remove(), 300)">✕</button>
         `;
 
             container.appendChild(toast);

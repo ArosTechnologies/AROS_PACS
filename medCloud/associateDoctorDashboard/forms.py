@@ -12,16 +12,16 @@ class AssociateDoctorSignupForm(forms.ModelForm):
     Collects both base User data (email, name, password) and specific 
     AssociateDoctor profile data (professional ID, university) in a single step.
     """
-    first_name = forms.CharField(max_length=30, label='Nombre')
-    last_name = forms.CharField(max_length=30, label='Apellidos')
-    email = forms.EmailField(label='Correo Electrónico')
-    password = forms.CharField(widget=forms.PasswordInput, label='Contraseña')
-    password_confirm = forms.CharField(widget=forms.PasswordInput, label='Confirmar Contraseña')
+    first_name = forms.CharField(max_length=30, label='Nombre', widget=forms.TextInput(attrs={'placeholder': 'Ej. Juan'}))
+    last_name = forms.CharField(max_length=30, label='Apellidos', widget=forms.TextInput(attrs={'placeholder': 'Ej. Pérez García'}))
+    email = forms.EmailField(label='Correo Electrónico', widget=forms.EmailInput(attrs={'placeholder': 'medico@hospital.com'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}), label='Contraseña')
+    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}), label='Confirmar Contraseña')
     
     # Associate Doctor specific fields
-    professional_id = forms.CharField(label='Cédula Profesional', max_length=100)
-    university = forms.CharField(label='Universidad', max_length=100)
-    specialty = forms.CharField(label='Especialidad', max_length=100)
+    professional_id = forms.CharField(label='Cédula Profesional', max_length=100, widget=forms.TextInput(attrs={'placeholder': 'Ej. 12345678'}))
+    university = forms.CharField(label='Universidad', max_length=100, widget=forms.TextInput(attrs={'placeholder': 'Ej. UNAM'}))
+    specialty = forms.CharField(label='Especialidad', max_length=100, widget=forms.TextInput(attrs={'placeholder': 'Ej. Cardiología'}))
 
     class Meta:
         model = AssociateDoctor
@@ -29,6 +29,10 @@ class AssociateDoctorSignupForm(forms.ModelForm):
         labels = {
             'address': 'Dirección',
             'phone': 'Teléfono',
+        }
+        widgets = {
+            'address': forms.TextInput(attrs={'placeholder': 'Ej. Av. Siempre Viva 123'}),
+            'phone': forms.TextInput(attrs={'placeholder': 'Ej. 555 123 4567'}),
         }
 
     def clean_email(self):

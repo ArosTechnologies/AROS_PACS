@@ -41,3 +41,6 @@ db.sqlite3-journal
 # Private Documentation
 Raditech_API_Documentation/
 Business_Material/
+
+# Thesis Material
+thesis_material/

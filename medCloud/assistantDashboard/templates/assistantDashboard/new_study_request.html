@@ -25,13 +25,13 @@
             <div>
                 <label>Paciente *</label>
                 <div id="patientSearchWrapper">
-                    <input type="text" id="patientSearchInput" placeholder="Buscar por nombre, correo o teléfono..." autocomplete="off">
+                    <input class="input-field mb-md" type="text" id="patientSearchInput" placeholder="Buscar por nombre, correo o teléfono..." autocomplete="off">
                     <input type="hidden" name="id_patient" id="patientIdHidden">
                     <div id="searchResults"></div>
                 </div>
                 <div id="selectedPatient">
                     <span id="selectedPatientName"></span>
-                    <button type="button" id="clearPatient">✕</button>
+                    <button class="btn btn-primary" type="button" id="clearPatient">✕</button>
                 </div>
 
                 <!-- Inline Create Patient Form (hidden by default) -->
@@ -41,21 +41,21 @@
                     <div>
                         <div>
                             <label>Nombre *</label>
-                            <input type="text" id="newPatientFirstName" placeholder="Nombre">
+                            <input class="input-field mb-md" type="text" id="newPatientFirstName" placeholder="Nombre">
                         </div>
                         <div>
                             <label>Apellido *</label>
-                            <input type="text" id="newPatientLastName" placeholder="Apellido">
+                            <input class="input-field mb-md" type="text" id="newPatientLastName" placeholder="Apellido">
                         </div>
                     </div>
                     <div>
                         <div>
                             <label>Correo *</label>
-                            <input type="email" id="newPatientEmail" placeholder="correo@ejemplo.com">
+                            <input class="input-field mb-md" type="email" id="newPatientEmail" placeholder="correo@ejemplo.com">
                         </div>
                         <div>
                             <label>Teléfono *</label>
-                            <input type="text" id="newPatientPhone" placeholder="555-0000">
+                            <input class="input-field mb-md" type="text" id="newPatientPhone" placeholder="555-0000">
                         </div>
                     </div>
                     <div>
@@ -69,12 +69,12 @@
                         </div>
                         <div>
                             <label>Dirección</label>
-                            <input type="text" id="newPatientAddress" placeholder="Dirección">
+                            <input class="input-field mb-md" type="text" id="newPatientAddress" placeholder="Dirección">
                         </div>
                     </div>
                     <div>
-                        <button type="button" id="btnCreatePatient">Crear Paciente</button>
-                        <button type="button" id="btnCancelCreate">Cancelar</button>
+                        <button class="btn btn-primary" type="button" id="btnCreatePatient">Crear Paciente</button>
+                        <button class="btn btn-primary" type="button" id="btnCancelCreate">Cancelar</button>
                     </div>
                 </div>
             </div>
@@ -95,7 +95,7 @@
             {% endfor %}
 
             <div>
-                <button type="submit">Crear Solicitud</button>
+                <button class="btn btn-primary" type="submit">Crear Solicitud</button>
                 <a href="{% url 'assistant_dashboard' %}">Cancelar</a>
             </div>
         </form>

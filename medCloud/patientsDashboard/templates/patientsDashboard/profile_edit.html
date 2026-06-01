@@ -15,7 +15,7 @@
             <div>
                 <div>
                     <label for="id_first_name">Nombre</label>
-                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"
+                    <input class="input-field mb-md" type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"
                          id="id_first_name" required>
                     {% if form.first_name.errors %}
                     <div>{{ form.first_name.errors }}</div>
@@ -24,7 +24,7 @@
 
                 <div>
                     <label for="id_last_name">Apellidos</label>
-                    <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}"
+                    <input class="input-field mb-md" type="text" name="last_name" value="{{ form.last_name.value|default:'' }}"
                          id="id_last_name" required>
                     {% if form.last_name.errors %}
                     <div>{{ form.last_name.errors }}</div>
@@ -33,7 +33,7 @@
 
                 <div>
                     <label for="id_email">Correo Electrónico</label>
-                    <input type="email" name="email" value="{{ form.email.value|default:'' }}" 
+                    <input class="input-field mb-md" type="email" name="email" value="{{ form.email.value|default:'' }}" 
                         id="id_email" required>
                     {% if form.email.errors %}
                     <div>{{ form.email.errors }}</div>
@@ -42,7 +42,7 @@
 
                 <div>
                     <label for="id_phone">Teléfono</label>
-                    <input type="text" name="phone" value="{{ form.phone.value|default:'' }}" 
+                    <input class="input-field mb-md" type="text" name="phone" value="{{ form.phone.value|default:'' }}" 
                         id="id_phone" required>
                     {% if form.phone.errors %}
                     <div>{{ form.phone.errors }}</div>
@@ -51,7 +51,7 @@
 
                 <div>
                     <label for="id_address">Dirección</label>
-                    <input type="text" name="address" value="{{ form.address.value|default:'' }}" 
+                    <input class="input-field mb-md" type="text" name="address" value="{{ form.address.value|default:'' }}" 
                         id="id_address" required>
                     {% if form.address.errors %}
                     <div>{{ form.address.errors }}</div>
@@ -75,7 +75,7 @@
 
             <div>
                 <a href="{% url 'patientsDashboard:profile' %}">Cancelar</a>
-                <button type="submit">Guardar Cambios</button>
+                <button class="btn btn-primary" type="submit">Guardar Cambios</button>
             </div>
         </form>
     </div>

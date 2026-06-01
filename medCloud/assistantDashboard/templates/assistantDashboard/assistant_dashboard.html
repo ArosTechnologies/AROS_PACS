@@ -4,46 +4,46 @@
 {% block title %}Dashboard - Asistente{% endblock %}
 
 {% block content %}
-<div>
+<div class="flex flex-col md:flex-row gap-lg">
     <!-- Left: Main Content -->
-    <div>
-        <div>
-            <h1>Panel de Asistente</h1>
-            <a href="{% url 'new_study_request' %}">Nueva Solicitud</a>
+    <div class="w-full md:w-2/3 flex flex-col gap-lg">
+        <div class="card flex justify-between items-center mb-0">
+            <h1 class="headline-md" style="margin:0;">Panel de Asistente</h1>
+            <a href="{% url 'new_study_request' %}" class="btn btn-primary">Nueva Solicitud</a>
         </div>
 
         <div id="pendingDoctorsSection">
-            <div>Doctores Pendientes de Aprobación</div>
+            <h2 class="headline-md mb-md">Doctores Pendientes de Aprobación</h2>
 
-            <div id="pendingDoctorsGrid">
+            <div id="pendingDoctorsGrid" class="md:grid md:grid-cols-2 gap-md">
                 {% if pending_doctors %}
                 {% for doc in pending_doctors %}
-                <div data-doctor-id="{{ doc.pk }}">
-                    <div>
-                        <img src="https://ui-avatars.com/api/?name={{ doc.user.first_name }}&background=0D8ABC&color=fff&rounded=true&bold=true" alt="Avatar">
+                <div class="card flex flex-col justify-between" data-doctor-id="{{ doc.pk }}">
+                    <div class="flex items-center gap-md mb-md">
+                        <img src="https://ui-avatars.com/api/?name={{ doc.user.first_name }}&background=0D8ABC&color=fff&rounded=true&bold=true" alt="Avatar" style="width:48px; height:48px; border-radius:50%;">
                         <div>
-                            <h3>{{ doc.user.first_name }} {{ doc.user.last_name }}</h3>
-                            <p>Doctor Asociado</p>
+                            <h3 class="headline-md" style="margin:0;">{{ doc.user.first_name }} {{ doc.user.last_name }}</h3>
+                            <p class="label-md text-secondary" style="margin:0;">Doctor Asociado</p>
                         </div>
                     </div>
-                    <div>
-                        <div><strong>Cédula:</strong> {{ doc.professional_id|default:"-" }}</div>
-                        <div><strong>Especialidad:</strong> {{ doc.specialty|default:"-" }}</div>
-                        <div><strong>Universidad:</strong> {{ doc.university|default:"-" }}</div>
-                        <div><strong>Email:</strong> {{ doc.user.email }}</div>
-                        <div><strong>Teléfono:</strong> {{ doc.phone|default:"-" }}</div>
-                        <div><strong>Dirección:</strong> {{ doc.address|default:"-" }}</div>
-                        <div><strong>Género:</strong> {{ doc.get_gender_display|default:"-" }}</div>
+                    <div class="flex flex-col gap-xs mb-md body-md">
+                        <div><strong class="text-secondary">Cédula:</strong> {{ doc.professional_id|default:"-" }}</div>
+                        <div><strong class="text-secondary">Especialidad:</strong> {{ doc.specialty|default:"-" }}</div>
+                        <div><strong class="text-secondary">Universidad:</strong> {{ doc.university|default:"-" }}</div>
+                        <div><strong class="text-secondary">Email:</strong> {{ doc.user.email }}</div>
+                        <div><strong class="text-secondary">Teléfono:</strong> {{ doc.phone|default:"-" }}</div>
+                        <div><strong class="text-secondary">Dirección:</strong> {{ doc.address|default:"-" }}</div>
+                        <div><strong class="text-secondary">Género:</strong> {{ doc.get_gender_display|default:"-" }}</div>
                     </div>
-                    <div>
-                        <button  data-action="approve">Aprobar</button>
-                        <button  data-action="deny">Rechazar</button>
+                    <div class="flex gap-sm">
+                        <button class="btn btn-primary flex-1 btn-verify" data-action="approve">Aprobar</button>
+                        <button class="btn btn-secondary flex-1 btn-verify" data-action="deny">Rechazar</button>
                     </div>
                 </div>
                 {% endfor %}
                 {% else %}
-                <div>
-                    <p>No hay cuentas de doctores asociadas pendientes de revisión.</p>
+                <div class="card">
+                    <p class="body-md text-secondary">No hay cuentas de doctores asociadas pendientes de revisión.</p>
                 </div>
                 {% endif %}
             </div>
@@ -51,36 +51,39 @@
     </div>
 
     <!-- Right: Active Tickets Sidebar -->
-    <div>
-        <div>
-            <h2>Tickets Activos</h2>
-            {% if active_tickets %}
-            <span>{{ active_tickets|length }}</span>
-            {% endif %}
-        </div>
-        <div>
-            {% for req in active_tickets %}
-            <div id="ticket-{{ req.pk }}">
+    <div class="w-full md:w-1/3">
+        <div class="card">
+            <div class="flex justify-between items-center mb-md pb-sm" style="border-bottom: 1px solid var(--surface-container);">
+                <h2 class="headline-md" style="margin:0;">Tickets Activos</h2>
+                {% if active_tickets %}
+                <span class="chip chip-success">{{ active_tickets|length }}</span>
+                {% endif %}
+            </div>
+            <div class="flex flex-col gap-sm">
+                {% for req in active_tickets %}
+                <div class="card mb-0 flex flex-col gap-xs" id="ticket-{{ req.pk }}" style="padding: var(--spacing-sm); border-radius: var(--radius-md);">
                 <div>{{ req.id_patient.first_name }} {{ req.id_patient.last_name }}</div>
-                <div>{{ req.requested_study }}</div>
-                <div>
-                    <span>{{ req.created_at|date:"d/m/Y H:i" }}</span>
-                    {% if req.first_printed_at %}
-                    <span id="status-{{ req.pk }}">Impreso</span>
-                    {% else %}
-                    <span id="status-{{ req.pk }}">Nuevo</span>
-                    {% endif %}
+                    <div class="label-md text-secondary">{{ req.requested_study }}</div>
+                    <div class="flex justify-between items-center mt-xs">
+                        <span class="label-md">{{ req.created_at|date:"d/m/Y H:i" }}</span>
+                        {% if req.first_printed_at %}
+                        <span class="chip chip-success" id="status-{{ req.pk }}">Impreso</span>
+                        {% else %}
+                        <span class="chip chip-warning" id="status-{{ req.pk }}">Nuevo</span>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'print_ticket' req.pk %}" target="_blank" id="btn-{{ req.pk }}"
+                        class="btn btn-outlined mt-sm w-full"
+                        onclick="updateTicketDesign('{{ req.pk }}')">
+                        <span id="btn-text-{{ req.pk }}">{% if req.first_printed_at %}Reimprimir{% else %}Imprimir{% endif %}</span>
+                    </a>
+            </div>
+                {% empty %}
+                <div class="body-md text-secondary text-center py-md">
+                    No hay tickets activos.
                 </div>
-                <a href="{% url 'print_ticket' req.pk %}" target="_blank" id="btn-{{ req.pk }}"
-                    onclick="updateTicketDesign('{{ req.pk }}')">
-                    <span id="btn-text-{{ req.pk }}">{% if req.first_printed_at %}Reimprimir{% else %}Imprimir{% endif %}</span>
-                </a>
+                {% endfor %}
             </div>
-            {% empty %}
-            <div>
-                No hay tickets activos.
-            </div>
-            {% endfor %}
         </div>
     </div>
 </div>

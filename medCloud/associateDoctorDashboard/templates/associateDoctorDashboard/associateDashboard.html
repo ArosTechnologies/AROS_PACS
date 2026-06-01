@@ -2,28 +2,28 @@
 {% load static %}
 
 {% block content %}
-<div>
-    <h1>Mis Pacientes</h1>
+<div class="flex flex-col gap-lg">
+    <h1 class="headline-lg" style="margin:0;">Mis Pacientes</h1>
 
     {% if patients %}
-    <div>
+    <div class="flex flex-col gap-lg">
         {% for patient in patients %}
-        <div>
+        <div class="card flex flex-col gap-md mb-0">
             <!-- Top: Patient Info -->
-            <div>
-                <div>
+            <div class="flex items-center gap-md pb-md" style="border-bottom: 1px solid var(--surface-container);">
+                <div class="btn-icon-cyan flex items-center justify-center" style="width:48px; height:48px; border-radius:50%; font-size:18px; font-weight:bold;">
                     {{ patient.first_name|first }}{{ patient.last_name|first }}
                 </div>
                 <div>
-                    <h3>{{ patient.first_name }} {{ patient.last_name }}</h3>
-                    <span>{{ patient.gender }} | {{ patient.phone }}</span>
+                    <h3 class="headline-md" style="margin:0;">{{ patient.first_name }} {{ patient.last_name }}</h3>
+                    <span class="label-md text-secondary" style="margin:0;">{{ patient.gender }} | {{ patient.phone }}</span>
                 </div>
             </div>
 
             <!-- Bottom: Studies Carousel -->
             <div>
                 {% if patient.study_set.all %}
-                <div>
+                <div class="flex gap-md" style="overflow-x:auto; padding-bottom:var(--spacing-sm);">
                     {% for study in patient.study_set.all|dictsortreversed:"date" %} <!-- Ordered by date desc -->
                         {% url 'studyDetail' study.id_study as study_detail_url %}
                         {% if study.id_report and study.id_report.status == 'PRO' %}
@@ -36,15 +36,15 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <div>No hay estudios registrados</div>
+                <div class="body-md text-secondary">No hay estudios registrados</div>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div>
-        <p>No tienes pacientes asociados actualmente.</p>
+    <div class="card text-center text-secondary py-lg">
+        <p class="body-md" style="margin:0;">No tienes pacientes asociados actualmente.</p>
     </div>
     {% endif %}
 </div>

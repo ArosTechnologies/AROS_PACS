@@ -54,11 +54,11 @@ class PatientSignupForm(forms.ModelForm):
     Custom registration form allowing new Patients to sign up from the public site.
     Handles cryptographic password validation and creates the proxy user entities.
     """
-    first_name = forms.CharField(max_length=30, label='Nombre')
-    last_name = forms.CharField(max_length=30, label='Apellidos')
-    email = forms.EmailField(label='Correo Electrónico')
-    password = forms.CharField(widget=forms.PasswordInput, label='Contraseña')
-    password_confirm = forms.CharField(widget=forms.PasswordInput, label='Confirmar Contraseña')
+    first_name = forms.CharField(max_length=30, label='Nombre', widget=forms.TextInput(attrs={'placeholder': 'Ej. Ana'}))
+    last_name = forms.CharField(max_length=30, label='Apellidos', widget=forms.TextInput(attrs={'placeholder': 'Ej. López'}))
+    email = forms.EmailField(label='Correo Electrónico', widget=forms.EmailInput(attrs={'placeholder': 'paciente@ejemplo.com'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}), label='Contraseña')
+    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}), label='Confirmar Contraseña')
 
     class Meta:
         model = Patient
@@ -67,6 +67,10 @@ class PatientSignupForm(forms.ModelForm):
             'address': 'Dirección',
             'phone': 'Teléfono',
             'gender': 'Género'
+        }
+        widgets = {
+            'address': forms.TextInput(attrs={'placeholder': 'Ej. Calle Principal 456'}),
+            'phone': forms.TextInput(attrs={'placeholder': 'Ej. 555 987 6543'}),
         }
 
     def clean_email(self):
