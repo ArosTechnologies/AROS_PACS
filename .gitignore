@@ -44,3 +44,6 @@ Business_Material/
 
 # Thesis Material
 thesis_material/
+
+# Agents
+.agent/

@@ -144,4 +144,3 @@ docker-compose up --build
 ## Autores y Contacto
 
 Iván Vivas García - ivanvivasgar@gmail.com - Universidad La Salle Bajío <br>
-Emmanuel Ovalle Magallanes - eom106933@lasallebajio.edu.mx - Universidad La Salle Bajío <br>
