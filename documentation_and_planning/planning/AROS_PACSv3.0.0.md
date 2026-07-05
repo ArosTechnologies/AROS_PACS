@@ -870,7 +870,7 @@ La adopción estricta de "Zero Clinical Data Retention" en `aros-core` descentra
 
 ### Fase 0 — Preparación del Monorepo y Turborepo *(Día 1-2)*
 
-- [ ] Inicializar Turborepo en la raíz del repositorio con `npx create-turbo@latest`
+- [x] Inicializar Turborepo en la raíz del repositorio con `npx create-turbo@latest`
 - [ ] Configurar pnpm workspaces en el `package.json` raíz
 - [ ] Crear la estructura base de `apps/`: `core-api/`, `clinic-api/`, `patient-portal/`, `clinic-portal/`, `dicom-viewer/`
 - [ ] Crear la estructura base de `packages/`: `types/`, `api-client/`, `ui/`
