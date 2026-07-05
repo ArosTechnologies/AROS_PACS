@@ -46,6 +46,9 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS')
 # Application definition
 
 INSTALLED_APPS = [
+    'drf_spectacular',
+    'rest_framework_simplejwt',
+    'identity',
     'daphne',
     'core.apps.CoreConfig',
     'django.contrib.admin',
@@ -55,10 +58,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
-    'doctorsDashboard.apps.DoctorsdashboardConfig',
-    'assistantDashboard.apps.AssistantdashboardConfig',
-    'patientsDashboard.apps.PatientsdashboardConfig',
-    'associateDoctorDashboard.apps.AssociatedoctordashboardConfig',
 ]
 
 # Django Channels
@@ -224,3 +223,4 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='AROS PACS <arosPacs@gmail.com>')
+AUTH_USER_MODEL = 'identity.User'

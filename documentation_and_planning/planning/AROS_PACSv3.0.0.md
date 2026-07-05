@@ -871,25 +871,25 @@ La adopción estricta de "Zero Clinical Data Retention" en `aros-core` descentra
 ### Fase 0 — Preparación del Monorepo y Turborepo *(Día 1-2)*
 
 - [x] Inicializar Turborepo en la raíz del repositorio con `npx create-turbo@latest`
-- [ ] Configurar pnpm workspaces en el `package.json` raíz
-- [ ] Crear la estructura base de `apps/`: `core-api/`, `clinic-api/`, `patient-portal/`, `clinic-portal/`, `dicom-viewer/`
-- [ ] Crear la estructura base de `packages/`: `types/`, `api-client/`, `ui/`
-- [ ] Crear `turbo.json` con pipeline de tareas (dev, build, lint, type-check)
-- [ ] Configurar el `tsconfig.json` base compartido en `packages/`
-- [ ] Validar que `turbo run dev` levanta todos los workspaces correctamente
+- [x] Configurar pnpm workspaces en el `package.json` raíz
+- [x] Crear la estructura base de `apps/`: `core-api/`, `clinic-api/`, `patient-portal/`, `clinic-portal/`, `dicom-viewer/`
+- [x] Crear la estructura base de `packages/`: `types/`, `api-client/`, `ui/`
+- [x] Crear `turbo.json` con pipeline de tareas (dev, build, lint, type-check)
+- [x] Configurar el `tsconfig.json` base compartido en `packages/`
+- [x] Validar que `turbo run dev` levanta todos los workspaces correctamente
 
 ### Fase 1 — Arquitectura del Monorepo *(Semana 1)*
 
-- [ ] Crear la estructura `apps/core-api/` (Identity Provider & Gateway) con Django 5.2 LTS.
-- [ ] Crear la estructura `apps/clinic-api/` (Microservicio de la clínica).
-- [ ] Definir modelos en `core-api`: `User` (con `email_hash`, `email_encrypted`, `password` Argon2, `uuid`), `FederationIDMap`, `ClinicRegistry`, `Roles`, `ConsentRecord`.
-- [ ] Definir modelos en `clinic-api`: `PatientProfile` (PHI), `StudyRequest`, `Study`, `Report`.
-- [ ] Crear migraciones y aplicar **índices críticos** de BD en ambos RDS:
+- [x] Crear la estructura `apps/core-api/` (Identity Provider & Gateway) con Django 5.2 LTS.
+- [x] Crear la estructura `apps/clinic-api/` (Microservicio de la clínica).
+- [x] Definir modelos en `core-api`: `User` (con `email_hash`, `email_encrypted`, `password` Argon2, `uuid`), `FederationIDMap`, `ClinicRegistry`, `Roles`, `ConsentRecord`.
+- [x] Definir modelos en `clinic-api`: `PatientProfile` (PHI), `StudyRequest`, `Study`, `Report`.
+- [x] Crear migraciones y aplicar **índices críticos** de BD en ambos RDS:
   - `idx_federation_user_clinic` en `FederationIDMap`
   - `idx_studyreq_accession` (UNIQUE) en `StudyRequest`
   - `idx_study_patient_date` en `Study`
   - `idx_consent_user_clinic` en `ConsentRecord`
-- [ ] Definir health check endpoints: `GET /health/` y `GET /ready/` en `core-api` y `clinic-api`.
+- [x] Definir health check endpoints: `GET /health/` y `GET /ready/` en `core-api` y `clinic-api`.
 
 ### Fase 2 — Autenticación RS256, JWKS y Blacklist en AROS Core API *(Semana 2)*
 
