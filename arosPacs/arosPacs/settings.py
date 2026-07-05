@@ -224,14 +224,3 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='AROS PACS <arosPacs@gmail.com>')
-
-# Raditech PACS/RIS API Configuration
-RADITECH_API_URL = env('RADITECH_API_URL', default='https://risapi.grupoptm.com/api')
-RADITECH_KEY = env('RADITECH_KEY', default='')
-RADITECH_EMAIL = env('RADITECH_EMAIL', default='')
-RADITECH_PASSWORD = env('RADITECH_PASSWORD', default='')
-RADITECH_ORG_ID = env('RADITECH_ORG_ID', default='')
-RADITECH_STUDY_SOURCE_ID = env('RADITECH_STUDY_SOURCE_ID', default='')
-RADITECH_HOSPITAL_AET = env('RADITECH_HOSPITAL_AET', default='GPTMDEMO')
-RADITECH_RSP = env('RADITECH_RSP', default='GPTM')
-RADITECH_SYNC_INTERVAL = env.int('RADITECH_SYNC_INTERVAL', default=300)  # seconds between image sync cycles

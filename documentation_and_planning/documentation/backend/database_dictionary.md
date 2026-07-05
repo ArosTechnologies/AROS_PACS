@@ -10,10 +10,10 @@ Represents a concrete radiological study, created once DICOM images have arrived
 | Field Name | Type | Description |
 | :--- | :--- | :--- |
 | `id_study` | `AutoField (PK)` | Primary Key. |
-| `pacs_url` | `CharField` | URL to the DICOM viewer provided by Raditech. |
+| `pacs_url` | `CharField` | URL to the DICOM viewer. |
 | `email_sent` | `BooleanField` | Tracks if the final results email was dispatched to the patient. |
 | `date` | `DateField` | The date the study was performed. |
-| `raditech_visit_id` | `CharField` | External integration identifier. |
+
 | `accession_number` | `CharField` | External integration identifier. |
 | `id_study_request` | `ForeignKey` | Relates to `assistantDashboard.StudyRequest` (CASCADE). |
 | `id_report` | `ForeignKey` | Relates to `core.Report` (CASCADE, nullable). |
@@ -48,7 +48,7 @@ Profile for registered Patients receiving services.
 | `address`, `phone` | `CharField` | Contact demographics. |
 | `gender` | `CharField` | `M` (Male), `F` (Female), `O` (Other). |
 | `is_email_verified` | `BooleanField` | Verification flag. |
-| `raditech_patient_id` | `CharField` | External integration identifier. |
+
 | `mrn` | `CharField` | Medical Record Number (Unique). |
 | `associated_doctors` | `ManyToManyField` | Privacy settings mapping which external `AssociateDoctor`s can view results. |
 

@@ -29,8 +29,8 @@ class StudyRequest(models.Model):
     """
     Represents an initial request or ticket for a radiological study.
     Created by an Assistant at the front desk when a Patient arrives.
-    This record is later synchronized by a background worker with the Raditech PACS API
-    to create a concrete 'core.Study' instance once the DICOM images are available.
+    This record is later synchronized to create a concrete 'core.Study' instance 
+    once the DICOM images are available.
     """
     REQUESTED_STUDY_CHOICES = [
         ("Rayos X", (

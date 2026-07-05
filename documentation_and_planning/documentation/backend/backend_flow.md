@@ -26,7 +26,7 @@ This document describes the request/response lifecycle and internal data flow of
 3. A 18-character alphanumeric `pdf_password` is securely auto-generated.
 4. The Assistant prints a physical ticket (`first_printed_at` timestamp recorded) which gives the patient access instructions.
 5. In the background, the `sync_pacs` Docker container continuously runs the `sync_pacs_images` management command.
-6. When the physical study is completed at the modalities (X-Ray/MRI) and hits the Raditech PACS system, the sync script pulls the metadata down, matches it against the pending `StudyRequest`, and generates a concrete **`core.Study`**.
+6. When the physical study is completed at the modalities (X-Ray/MRI) and hits the PACS system, the sync script pulls the metadata down, matches it against the pending `StudyRequest`, and generates a concrete **`core.Study`**.
 
 ### B. Diagnostic Reporting Flow (The Doctor Pipeline)
 1. A **ReportingDoctor** logs into the `/doctor/` dashboard.

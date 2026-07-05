@@ -35,7 +35,6 @@ class Patient(models.Model):
     is_email_verified = models.BooleanField(default=False)
     
     # External PACS/RIS Integration identifiers
-    raditech_patient_id = models.CharField(max_length=100, null=True, blank=True)
     mrn = models.CharField(max_length=50, null=True, blank=True, unique=True)
     
     # Privacy & Sharing settings: Defines which doctors can access this patient's records

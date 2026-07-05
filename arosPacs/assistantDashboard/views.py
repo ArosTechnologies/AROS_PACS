@@ -91,8 +91,7 @@ class AllStudyRequestsView(AssistantRequiredMixin, ListView):
 class StudyRequestCreateView(AssistantRequiredMixin, CreateView):
     """
     Class-based view handling the creation of a new radiological StudyRequest.
-    Includes logic to securely integrate with the Raditech PACS/RIS API synchronously
-    before saving the local record.
+    Saves the local record and triggers necessary workflows.
     """
     model = StudyRequest
     form_class = StudyRequestForm

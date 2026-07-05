@@ -1,29 +1,34 @@
-# AROSPACS v2 — Arquitectura y Plan de Implementación con PACS Orthanc
+# AROSPACS v3.0 — Arquitectura y Plan de Implementación con PACS Orthanc
 
 > **Documento de referencia técnica para tesis**
-> Versión: 2.0 | Fecha: Junio 2026
+> Versión: 3.0.0 | Fecha: Junio 2026
 > Proyecto: Sistema de Registros Médicos Electrónicos con Arquitectura Multi-Clínica y PACS Descentralizado
 
 ---
 
 ## 1. Visión General del Producto Final
 
-AROSPACS v2 es una **plataforma SaaS de registros médicos electrónicos** que permite a múltiples clínicas de radiología gestionar estudios de imágenes diagnósticas utilizando estándares médicos abiertos, mientras los pacientes pueden acceder a su historial médico universal desde cualquier lugar.
+AROSPACS v3.0 es una **plataforma SaaS de registros médicos electrónicos** que permite a múltiples clínicas de radiología gestionar estudios de imágenes diagnósticas utilizando estándares médicos abiertos, mientras los pacientes pueden acceder a su historial médico universal desde cualquier lugar.
 
 La plataforma se compone de **cinco sistemas independientes** que colaboran como un ecosistema cohesivo:
 
 | # | Sistema | Descripción | Quién lo usa | Visibilidad |
 |---|---|---|---|---|
-| 1 | **API Backend (Django)** | Cerebro central: gestiona identidades, datos clínicos, seguridad y autorización | Ningún usuario final | Invisible |
-| 2 | **Portal Paciente** | Aplicación web donde el paciente consulta su historial médico universal | Todos los pacientes | Visible |
-| 3 | **Portal Clínica** | Aplicación web para el personal interno de la clínica | Administradores, Asistentes, Radiólogos | Visible |
-| 4 | **Visor DICOM (OHIF)** | Plataforma de visualización de imágenes radiológicas en el navegador | Radiólogos y Pacientes | Visible |
-| 5 | **Servidor PACS (Orthanc)** | Core de almacenamiento y comunicación médica; orquesta todos los flujos de imágenes DICOM mediante estándares DICOMweb | Ningún usuario final | **Invisible pero vital** |
+| 1 | **AROS Core API (Django)** | Identity Provider y API Gateway central. Enruta peticiones federadas a las clínicas. No almacena datos médicos. | Ningún usuario final | Invisible |
+| 2 | **Clinic Internal API** | Microservicio ligero desplegado dentro de la VPC aislada de CADA clínica. Gestiona su BD local y webhooks. | AROS Core API | Invisible |
+| 3 | **Portal Paciente** | Aplicación web donde el paciente consulta su historial médico universal | Todos los pacientes | Visible |
+| 4 | **Portal Clínica** | Aplicación web para el personal interno de la clínica | Administradores, Asistentes, Radiólogos | Visible |
+| 5 | **Visor DICOM (OHIF)** | Plataforma de visualización de imágenes radiológicas en el navegador | Radiólogos y Pacientes | Visible |
+| 6 | **Servidor PACS (Orthanc)** | Core de almacenamiento desplegado en cada clínica. Orquesta los flujos DICOM locales. | Ningún usuario final | **Invisible pero vital** |
 
-> [!NOTE]
-> Orthanc actúa como el **puente de infraestructura médica** entre el almacenamiento en la nube (buckets S3 propios de cada clínica) y los sistemas que consumen las imágenes (OHIF Viewer, Django API). Ningún usuario interactúa directamente con Orthanc; su trabajo ocurre de forma transparente en la capa de red interna.
+> **Manifiesto Zero Clinical Data Retention**
+> AROS Technologies opera bajo una política estricta de "Cero Retención de Datos Clínicos". La plataforma central en `aros-core` funciona puramente como un Identity Provider (IdP) y un API Gateway de interoperabilidad. Los archivos DICOM, solicitudes de estudio (StudyRequests), reportes y diagnósticos médicos son propiedad y responsabilidad exclusiva de cada clínica. Estos datos se procesan y persisten únicamente dentro de las cuentas de AWS aisladas de las clínicas (vía el Clinic Internal API y su RDS local) y nunca tocan el almacenamiento persistente central de AROS.
 
 ### ¿Qué puede hacer el producto final?
+
+> **Manifiesto Zero Clinical Data Retention**
+> AROS Technologies opera bajo una política estricta de "Cero Retención de Datos Clínicos". La plataforma central en `aros-core` funciona puramente como un Identity Provider (IdP) y un API Gateway de interoperabilidad. Los archivos DICOM, solicitudes de estudio (StudyRequests), reportes y diagnósticos médicos son propiedad y responsabilidad exclusiva de cada clínica. Estos datos se procesan y persisten únicamente dentro de las cuentas de AWS aisladas de las clínicas y nunca tocan el almacenamiento persistente de AROS.
+
 
 **El Paciente puede:**
 - Iniciar sesión con email y contraseña
@@ -43,7 +48,7 @@ La plataforma se compone de **cinco sistemas independientes** que colaboran como
 **El Médico Radiólogo / Técnico Radiólogo puede:**
 - Ver la cola de estudios pendientes de diagnóstico en el Portal Clínica
 - Abrir el OHIF Viewer integrado para revisar las imágenes radiológicas; las imágenes llegan automáticamente al visor porque la **máquina de radiología las envió directamente a Orthanc** vía el protocolo DICOM C-STORE al concluir el estudio
-- Redactar y firmar el reporte médico (hallazgos, conclusiones, recomendaciones), que Django persiste en la base de datos relacional
+- Redactar y firmar el reporte médico (hallazgos, conclusiones, recomendaciones), que se persiste en la base de datos aislada de la clínica (AWS Account independiente)
 
 > [!NOTE]
 > El técnico radiólogo **no sube manualmente ningún archivo**. La máquina de radiología (TAC, resonancia magnética, rayos X digital, etc.) tiene configurada la **dirección IP y el AET (Application Entity Title) de Orthanc** como destino de envío. Al concluir el estudio, la máquina lo transmite de forma automática y autónoma.
@@ -63,17 +68,13 @@ La plataforma se compone de **cinco sistemas independientes** que colaboran como
 
 ## 2. Arquitectura del Sistema
 
-### 2.1 Paradigma: Multi-Cuenta AWS Organizations — Un Silo por Clínica
+### 2.1 Paradigma: Federated APIs y Aislamiento Físico por Clínica
 
-La arquitectura v2 adopta un modelo **AWS Organizations Multi-Account** donde el aislamiento entre clínicas es físico, no lógico. AROS Technologies (cuenta `aros-core`) opera la infraestructura central compartida. Cada clínica onboarded recibe su propia cuenta AWS aislada dentro de la Unidad Organizacional `Clinic Workloads`, con su propio VPC, Orthanc ECS, S3 Bucket y CloudTrail. La comunicación entre cuentas ocurre exclusivamente a través del **AWS Transit Gateway (TGW)**, que actúa como el hub de red privado.
+La arquitectura v3.0 adopta un modelo **AWS Organizations Multi-Account** combinado con el patrón de diseño **Federated APIs**. AROS Technologies (cuenta `aros-core`) opera la infraestructura central compartida (Identity Provider y Gateway). Cada clínica onboarded recibe su propia cuenta AWS completamente aislada, provisionada por AROS, que contiene su propio VPC, Orthanc ECS, S3 Bucket, un RDS local y el **Clinic Internal API**. 
 
-**Por qué Multi-Cuenta y no `for_each` en una sola cuenta:**
-- El plugin S3 de Orthanc lee su bucket desde **variables de entorno estáticas en el arranque** — no existe soporte de switching dinámico en runtime. Un solo cluster de Orthanc no puede servir múltiples clínicas correctamente.
-- Una cuenta AWS es el límite de seguridad más fuerte que ofrece AWS. Un IAM mal configurado en un modelo de cuenta única podría filtrar datos entre clínicas. Con cuentas separadas, eso es estructuralmente imposible.
-- Cada clínica tiene su propio CloudTrail, su propio billing y su propia superficie de auditoría HIPAA.
-- **OHIF Viewer nunca se comunica directamente con Orthanc.** Todo el tráfico WADO-RS pasa por Django, que valida el JWT, verifica permisos y hace proxy del stream hacia el Orthanc interno de la clínica correcta vía TGW.
+La comunicación entre la cuenta central y las clínicas ocurre exclusivamente a través del **AWS Transit Gateway (TGW)**, enrutando peticiones seguras hacia el Clinic Internal API.
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │                               AWS ORGANIZATION (aros-mgmt)                                   │
 │                                                                                              │
@@ -89,28 +90,24 @@ La arquitectura v2 adopta un modelo **AWS Organizations Multi-Account** donde el
 │  │                             │                                                        │  │
 │  │                             ▼                                                        │  │
 │  │  ┌──────────────────────────────────────────────────────────────────────────────┐   │  │
-│  │  │  ECS Fargate — Django REST API (DRF + JWT)                                   │   │  │
-│  │  │                                                                              │   │  │
-│  │  │  · Autentica y autoriza todos los requests (JWT)                             │   │  │
-│  │  │  · Recibe Webhooks OnStableStudy de Orthanc (cross-account via TGW)         │   │  │
-│  │  │  · Proxy WADO-RS: valida JWT → resuelve orthanc_internal_url del Clinic     │   │  │
-│  │  │    model → httpx.stream() hacia ALB interno de la clínica (a través de TGW) │   │  │
-│  │  │  · Nunca toca archivos .dcm directamente                                    │   │  │
+│  │  │  ECS Fargate — AROS Core API (Django)                                        │   │  │
+│  │  │  · Identity Provider: Autentica y autoriza requests (JWT)                    │   │  │
+│  │  │  · API Gateway: Enruta peticiones a las Clinic Internal APIs                 │   │  │
+│  │  │  · Federated Query: Consulta múltiples clínicas en paralelo                  │   │  │
+│  │  │  · Proxy WADO-RS: Enruta tráfico DICOMweb hacia Orthanc                      │   │  │
+│  │  │  · CERO DATOS CLÍNICOS: No guarda estudios, reportes ni imágenes.            │   │  │
 │  │  └──────────┬───────────────────────────────────────────┬─────────────────────┘   │  │
 │  │             │                                           │                          │  │
 │  │             ▼                                           ▼                          │  │
 │  │  ┌─────────────────────┐                  ┌────────────────────────────────────┐  │  │
 │  │  │  RDS PostgreSQL 16  │                  │  AWS Transit Gateway (TGW)         │  │  │
-│  │  │  (datos clínicos)   │                  │  · Owner: aros-core                │  │  │
-│  │  │  · StudyRequest      │                  │  · Compartido via AWS RAM a toda   │  │  │
-│  │  │  · Study             │                  │    la OU Clinic Workloads          │  │  │
-│  │  │  · Report            │                  │  · Enruta tráfico privado          │  │  │
-│  │  │  · Clinic            │                  │    Django → Clinic ALB (port 8042) │  │  │
-│  │  │    (orthanc_internal_│                  │  · Enruta Webhooks                 │  │  │
-│  │  │     url, aws_account_│                  │    Orthanc → Django (port 8000)    │  │  │
-│  │  │     id, vpc_cidr)    │                  └───────────────────┬────────────────┘  │  │
-│  │  └─────────────────────┘                                      │                   │  │
-│  │                                                               │ TGW Attachments   │  │
+│  │  │  (IdP & Registry)   │                  │  · Owner: aros-core                │  │  │
+│  │  │  · User             │                  │  · Enruta peticiones desde el      │  │  │
+│  │  │  · PatientProfile   │                  │    Core API hacia el ALB interno   │  │  │
+│  │  │  · ClinicRegistry   │                  │    de cada clínica (Clinic API y   │  │  │
+│  │  │  · Role/Permissions │                  │    Orthanc Proxy).                 │  │  │
+│  │  └─────────────────────┘                  └───────────────────┬────────────────┘  │  │
+│  │                                                               │ TGW Attachments  │  │
 │  └───────────────────────────────────────────────────────────────┼───────────────────┘  │
 │                                                                  │                      │
 │  ┌─────────────────────────── OU: Clinic Workloads ──────────────┼────────────────────┐ │
@@ -119,137 +116,44 @@ La arquitectura v2 adopta un modelo **AWS Organizations Multi-Account** donde el
 │  │  │  VPC: 10.1.0.0/16                                     │◄───┘                   │ │
 │  │  │                                                       │                        │ │
 │  │  │  ┌─────────────────────────────────────────────────┐ │                        │ │
-│  │  │  │  ALB Interno (port 8042 — solo desde TGW)       │ │                        │ │
-│  │  │  └─────────────────────────┬───────────────────────┘ │                        │ │
-│  │  │                            ▼                         │                        │ │
-│  │  │  ┌─────────────────────────────────────────────────┐ │                        │ │
-│  │  │  │  ECS Fargate — Orthanc PACS (Core 1.12.11)      │ │                        │ │
-│  │  │  │  AET: ORTHANC_SAN_JOSE                          │◄┼── DICOM C-STORE (4242)│ │
-│  │  │  │  ENV: S3_BUCKET=orthanc-san-jose-dicom (static) │ │   Máquina Radiología  │ │
-│  │  │  │  ENV: DB_SCHEMA=orthanc_san_jose        (static) │ │   (LAN/VPN clínica)   │ │
-│  │  │  │  Webhook OnStableStudy → Django (via TGW)        │ │                        │ │
-│  │  │  └──────────────────────┬──────────────────────────┘ │                        │ │
-│  │  │                         │ Plugin S3                  │                        │ │
-│  │  │                         ▼                            │                        │ │
-│  │  │  ┌─────────────────────────────────────────────────┐ │                        │ │
-│  │  │  │  S3 Bucket: orthanc-san-jose-dicom               │ │                        │ │
-│  │  │  │  (privado, cifrado KMS, versionado)              │ │                        │ │
-│  │  │  └─────────────────────────────────────────────────┘ │                        │ │
+│  │  │  │  ALB Interno (solo accesible desde TGW)         │ │                        │ │
+│  │  │  └──────────┬────────────────────────────┬─────────┘ │                        │ │
+│  │  │             │ Proxy WADO-RS              │ API HTTP  │                        │ │
+│  │  │             ▼                            ▼           │                        │ │
+│  │  │  ┌────────────────────┐   ┌────────────────────────┐ │                        │ │
+│  │  │  │ ECS Orthanc PACS   │   │ ECS Clinic Internal API│ │                        │ │
+│  │  │  │ (C-STORE 4242)     │   │ (Microservicio local)  │ │                        │ │
+│  │  │  │ OnStable Webhook ──┼───► Vincula estudios       │ │                        │ │
+│  │  │  └──────────┬─────────┘   └──────────┬─────────────┘ │                        │ │
+│  │  │             │ S3/RDS                 │ RDS           │                        │ │
+│  │  │             ▼                        ▼               │                        │ │
+│  │  │  ┌────────────────────┐   ┌────────────────────────┐ │                        │ │
+│  │  │  │ S3 Bucket (DICOM)  │   │ RDS PostgreSQL Clínica │ │                        │ │
+│  │  │  │ KMS, Privado       │   │ - StudyRequest, Study  │ │                        │ │
+│  │  │  │                    │   │ - Report, Orthanc DB   │ │                        │ │
+│  │  │  └────────────────────┘   └────────────────────────┘ │                        │ │
 │  │  └───────────────────────────────────────────────────────┘                        │ │
 │  │                                                                                   │ │
 │  │  ┌──────────────── CUENTA: clinic-radiologia-norte ──────┐                        │ │
-│  │  │  VPC: 10.2.0.0/16  (estructura idéntica a san-jose)  │                        │ │
-│  │  │  · Orthanc AET: ORTHANC_RADIOLOGIA_NORTE             │                        │ │
-│  │  │  · S3: orthanc-radiologia-norte-dicom                │                        │ │
+│  │  │  VPC: 10.2.0.0/16  (estructura idéntica aprovisionada)│                        │ │
 │  │  └───────────────────────────────────────────────────────┘                        │ │
-│  │                                                                                   │ │
-│  │  ┌──────────────── CUENTA: clinic-N ─────────────────────┐                        │ │
-│  │  │  VPC: 10.N.0.0/16  (provisionada por pipeline al      │                        │ │
-│  │  │  onboardear una nueva clínica)                        │                        │ │
-│  │  └───────────────────────────────────────────────────────┘                        │ │
-│  └───────────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                        │
-│  ┌──────────────────────── OU: Security & Logging ───────────────────────────────────┐ │
-│  │  CUENTA: aros-security                                                            │ │
-│  │  · AWS Security Hub (agrega hallazgos de todas las cuentas)                       │ │
-│  │  · AWS Config (reglas de cumplimiento HIPAA: cifrado, acceso público bloqueado)   │ │
-│  │  · CloudTrail Lake centralizado (logs de todas las cuentas)                       │ │
 │  └───────────────────────────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────────────────┘
-
-Flujo WADO-RS (visualización de imágenes):
-  OHIF Viewer → HTTPS → api.arospacs.com/api/v1/dicom-web/{clinic_slug}/{path}
-              → Django valida JWT + verifica membresía de clínica
-              → httpx.stream() → TGW → ALB interno clínica → Orthanc (port 8042)
-              → Orthanc lee .dcm de S3 → stream chunk a chunk de vuelta al navegador
-              [Django nunca carga el archivo completo en RAM]
 ```
 
-**Puntos clave del diagrama:**
-- Cada clínica es una **cuenta AWS separada**: el límite de seguridad más fuerte de AWS — una política IAM mal configurada nunca puede filtrar datos entre clínicas
-- Orthanc arranca con **variables de entorno estáticas**: `S3_BUCKET` y `DB_SCHEMA` se definen en el ECS Task Definition al momento del despliegue y nunca cambian en runtime
-- El **AET DICOM es único por clínica** (`ORTHANC_SAN_JOSE`, `ORTHANC_RADIOLOGIA_NORTE`): las máquinas de radiología se configuran con el AET y el IP/puerto del Orthanc específico de su clínica
-- **OHIF nunca se conecta directamente a Orthanc**: el WADO-RS pasa siempre por Django, que actúa como proxy autenticado y autorizado. Orthanc no tiene ruta pública
-- El **Transit Gateway** es el único canal de red entre cuentas: el tráfico Django → Orthanc y Orthanc → Django (Webhook) nunca sale a internet
+### 2.2 Modelo de Datos: Zero Clinical Data Retention Estricto
 
-### 2.2 Modelo de Datos: Multi-Cuenta con Capas Aisladas por Clínica
+La base de datos central de AROS no es un monolito; el almacenamiento está rígidamente particionado.
 
-La arquitectura separa los datos en **cuatro capas**, donde las capas 2, 3 y 4 son físicamente aisladas por clínica.
+**Base de Datos AROS Core (`aros-core` RDS):**
+- **Contiene ÚNICAMENTE:** `User`, `PatientProfile`, `ClinicRegistry` y `Role/Permissions`.
+- **Propósito:** Gestión de identidades, autenticación JWT y configuración de enrutamiento (URLs internas del TGW).
+- **Restricción:** Ninguna tabla de esta base de datos almacena diagnósticos, historiales, reportes o meta-datos DICOM.
 
-**Capa 1 — Datos textuales y relacionales (RDS centralizado en `aros-core`):**
-- Perfiles de pacientes, clínicas, usuarios, solicitudes de estudio y reportes médicos
-- El modelo `Clinic` almacena los campos de infraestructura que el pipeline de despliegue escribe al provisionar cada cuenta:
-  - `orthanc_internal_url`: DNS del ALB interno de Orthanc (ej: `http://internal-orthanc-san-jose-123.elb.amazonaws.com:8042`) — lo usa Django para el proxy WADO-RS
-  - `aws_account_id`: ID de la cuenta AWS de la clínica (ej: `123456789012`) — lo usa el pipeline de despliegue
-  - `vpc_cidr`: bloque CIDR asignado a la cuenta (ej: `10.1.0.0/16`) — debe ser único y no solaparse con otras clínicas para que el TGW pueda enrutar correctamente
-  - `orthanc_db_schema`: nombre del schema PostgreSQL que usa el plugin de Orthanc (ej: `orthanc_san_jose`)
-
-**Capa 2 — Índice de imágenes DICOM (RDS PostgreSQL — schema aislado por clínica):**
-- El plugin PostgreSQL de Orthanc indexa cada Study, Series e Instance con sus UIDs y metadatos DICOM
-- Cada instancia de Orthanc escribe en su propio schema (ej: `orthanc_san_jose`), definido en la variable de entorno `ORTHANC__POSTGRESQL__SCHEMA` al momento del despliegue
-- El schema se crea al momento de provisionar la cuenta de la clínica; nunca comparte tablas con otro schema de otra clínica
-- Django guarda en `Study.orthanc_study_id` el UUID interno de Orthanc y en `Study.dicom_study_uid` el `StudyInstanceUID` DICOM estándar
-
-**Capa 3 — Archivos binarios DICOM (S3 privado en la cuenta de la clínica):**
-- Cada cuenta de clínica tiene su propio bucket S3 (`orthanc-{slug}-dicom`), creado y gestionado por Terraform al provisionar la cuenta
-- El bucket es privado, con cifrado AES-256/KMS, versionado habilitado y bloqueo de acceso público total
-- El plugin S3 de Orthanc usa el nombre del bucket desde la variable de entorno `ORTHANC__S3OBJECTSTORAGE__BUCKETNAME` — valor estático, nunca cambia en runtime
-- Ningún componente externo a la cuenta de la clínica puede acceder al bucket
-
-**Capa 4 — Tráfico de imágenes en tiempo real (stream cross-account via TGW):**
-- Cuando OHIF solicita un frame DICOM, el request va a `api.arospacs.com/api/v1/dicom-web/{clinic_slug}/{path}` (Django)
-- Django resuelve `Clinic.orthanc_internal_url`, verifica permisos y hace `httpx.stream()` hacia el ALB interno de la clínica a través del TGW
-- Los bytes del `.dcm` se streaman en chunks de 64KB directamente al navegador — Django nunca carga el archivo en RAM
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│          RDS CENTRAL — aros-core  (Capa 1: datos relacionales)                          │
-│                                                                                         │
-│  Clinic {                              StudyRequest {      Study {                      │
-│    slug: "san-jose",                     id: 7,              id: 42,                    │
-│    aws_account_id: "123456789012",       patient: FK,        study_request: OneToOne→7, │
-│    vpc_cidr: "10.1.0.0/16",             clinic: FK,         orthanc_study_id: "a3f",   │
-│    orthanc_internal_url:                accession_number:   dicom_study_uid: "1.2.840"  │
-│      "http://internal-orthanc-          "ACC-2026-0042",    clinic: FK                  │
-│       san-jose.elb.amazonaws.com:8042" status: "received"  }                            │
-│    orthanc_db_schema: "orthanc_san_jose"}                                               │
-│  }                                                                                      │
-└──────────────────────────────┬──────────────────────────────────────────────────────────┘
-                               │
-     ┌─────────────────────────┼───────────────────────────────────────────────────┐
-     │ aros-core ← TGW ─────────────────────────────────────────────────── TGW    │
-     │                         │                                                   │
-     ▼                         ▼                                                   ▼
-┌──────────────────┐  ┌─────────────────────────────────────────────────────────────────┐
-│  Django proxy    │  │  CUENTA: clinic-san-jose                                        │
-│  (Capa 4)        │  │                                                                 │
-│  httpx.stream()  │  │  Orthanc PostgreSQL Schema: orthanc_san_jose  (Capa 2)          │
-│  → TGW →         │  │  ┌──────────────────────────────────────────────────────────┐  │
-│  ALB interno →   │  │  │ StudyInstanceUID, AccessionNumber, Series, Instances...   │  │
-│  Orthanc :8042   │  │  └───────────────────────────────────┬──────────────────────┘  │
-└──────────────────┘  │                                      │ Plugin S3               │
-                      │                                      ▼                         │
-                      │  S3 Bucket: orthanc-san-jose-dicom  (Capa 3)                   │
-                      │  ┌──────────────────────────────────────────────────────────┐  │
-                      │  │  s3://orthanc-san-jose-dicom/                            │  │
-                      │  │  └── a3f2c1.../                                           │  │
-                      │  │      ├── instance_001.dcm (850 MB)                       │  │
-                      │  │      └── instance_002.dcm (820 MB)                       │  │
-                      │  │  [privado · KMS · versionado · sin acceso público]       │  │
-                      │  └──────────────────────────────────────────────────────────┘  │
-                      └─────────────────────────────────────────────────────────────────┘
-```
-
-**El Accession Number como clave de integración cross-account:**
-
-El **Accession Number** (campo DICOM `0008,0050`) conecta el mundo clínico con el mundo PACS a través de los límites de cuenta:
-
-1. El asistente crea la `StudyRequest` → Django genera `accession_number = "ACC-2026-0042"` y lo guarda en el RDS central
-2. El técnico ingresa ese código en la máquina de radiología antes de realizar el estudio
-3. La máquina embebe el Accession Number en cada archivo `.dcm` y lo envía vía DICOM C-STORE al Orthanc de **su clínica específica** (usando el AET y el puerto 4242 configurados en la máquina)
-4. Orthanc (en la cuenta `clinic-san-jose`) indexa el estudio en su schema `orthanc_san_jose`
-5. Orthanc dispara el Webhook `OnStableStudy` → el request cruza el TGW → llega a Django en `aros-core`
-6. Django extrae el Accession Number del payload, localiza la `StudyRequest`, crea el `Study` vinculado y actualiza el status a `"received"`
+**Base de Datos Clínica (RDS aprovisionado en cada cuenta AWS de clínica):**
+- **Contiene:** `StudyRequest` (solicitudes médicas), `Study` (metadatos vinculados), `Report` (diagnósticos firmados) y el esquema del plugin PostgreSQL de Orthanc.
+- **Propósito:** Persistencia local y soberana de la información médica protegida (PHI).
+- **Acceso:** Gestionado localmente por el **Clinic Internal API**, el cual responde a peticiones del AROS Core Gateway a través del TGW.
 
 ### 2.3 White-Labeling del Portal Clínica
 
@@ -462,272 +366,179 @@ Orthanc es un servidor PACS ligero, open-source, orientado al protocolo DICOM. E
 
 ### 5.1 Estructura del Repositorio
 
-El proyecto usa **Turborepo** como orquestador de monorepo, permitiendo múltiples aplicaciones en un solo repositorio Git con código compartido.
+El proyecto utiliza **Turborepo** para orquestar la arquitectura de APIs Federadas. El monolito ha sido descompuesto.
 
-```
+```text
 ElectronicMedicalRecords_Project/
-│
 ├── apps/
-│ │
-│ ├── backend/ ← Django REST API
-│ │ ├── core/ ← Modelos Study y Report
-│ │ ├── clinicDashboard/ ← Modelos Clinic, ClinicUser, PatientClinicLink
-│ │ ├── patientsDashboard/ ← Modelo Patient
-│ │ ├── doctorsDashboard/ ← Modelo ReportingDoctor (legacy → ClinicUser)
-│ │ ├── assistantDashboard/ ← Modelos Assistant y StudyRequest
-│ │ ├── associateDoctorDashboard/ ← Modelo AssociateDoctor
-│ │ ├── api/ ← App centralizada REST API
-│ │ │ ├── views/
-│ │ │ │ ├── auth_views.py ← Login / Refresh / Logout JWT
-│ │ │ │ ├── patient_views.py ← Endpoints del Portal Paciente
-│ │ │ │ ├── clinic_views.py ← Endpoints del Portal Clínica
-│ │ │ │ └── webhook_views.py ← Receptor de Webhooks de Orthanc (NUEVO)
-│ │ │ ├── serializers.py
-│ │ │ ├── permissions.py ← IsPatient, IsAssistant, IsReportingDoctor, IsClinicAdmin
-│ │ │ ├── authentication.py ← JWT con roles en el payload
-│ │ │ ├── throttles.py
-│ │ │ ├── orthanc_client.py ← Cliente HTTP para la API REST de Orthanc (NUEVO)
-│ │ │ └── urls.py
-│ │ └── medCloud/
-│ │ └── settings.py
-│ │
-│ ├── patient-portal/ ← Next.js — Portal Paciente
-│ │ └── src/
-│ │ ├── app/
-│ │ │ ├── login/
-│ │ │ ├── dashboard/ ← Historial de estudios
-│ │ │ ├── studies/[id]/ ← Detalle: reporte + botón OHIF Viewer
-│ │ │ └── clinics/ ← Gestión de clínicas autorizadas
-│ │ ├── components/
-│ │ └── stores/
-│ │
-│ ├── clinic-portal/ ← Next.js — Portal Clínica (white-labeling)
-│ │ └── src/
-│ │ ├── middleware.ts ← Subdominio → tema CSS
-│ │ ├── app/
-│ │ │ ├── login/
-│ │ │ ├── assistant/ ← Dashboard: solicitudes del día
-│ │ │ ├── doctor/ ← Dashboard: cola de estudios + visor OHIF
-│ │ │ └── admin/ ← Dashboard: usuarios, S3 BYOS, branding
-│ │ └── components/
-│ │
-│ └── dicom-viewer/ ← OHIF Viewer configurado
-│ ├── config/
-│ │ └── default.js ← Fuente de datos: Orthanc DICOMweb URL
-│ ├── Dockerfile
-│ └── nginx.conf
-│
+│   ├── core-api/ ← AROS Core API (Django IdP & Gateway)
+│   │   ├── auth/ ← Gestión de JWT, usuarios
+│   │   ├── gateway/ ← Ruteo federado vía httpx hacia las clínicas
+│   │   └── models/ ← User, PatientProfile, ClinicRegistry, Roles
+│   │
+│   ├── clinic-api/ ← Clinic Internal API (Django/FastAPI)
+│   │   ├── api/ ← Endpoints de gestión local (GET /studies/, POST /reports/)
+│   │   ├── webhooks/ ← Recibe evento OnStableStudy desde Orthanc local
+│   │   └── models/ ← StudyRequest, Study, Report (Guardados en RDS Clínica)
+│   │
+│   ├── patient-portal/ ← Next.js — Portal Paciente
+│   ├── clinic-portal/ ← Next.js — Portal Clínica
+│   └── dicom-viewer/ ← OHIF Viewer
 ├── packages/
-│ ├── types/ ← Tipos TypeScript compartidos
-│ │ └── src/index.ts ← Patient, Study, Report, Clinic, JWTPayload...
-│ ├── api-client/ ← Cliente HTTP compartido
-│ │ └── src/client.ts ← Axios con auto-refresh JWT
-│ └── ui/ ← Componentes visuales compartidos
-│ └── src/ ← Button, Card, Badge, Table, etc.
-│
-├── infra/ ← Terraform (IaC)
-│ ├── main.tf
-│ ├── variables.tf
-│ ├── outputs.tf
-│ └── modules/
-│ ├── networking/ ← VPC, subnets, security groups
-│ ├── backend/ ← ECS (Django) + RDS + Redis + ALB
-│ ├── orthanc/ ← ECS (Orthanc) + ALB interno (NUEVO)
-│ ├── patient-portal/ ← AWS Amplify
-│ ├── clinic-portal/ ← AWS Amplify + subdominios wildcard
-│ └── dicom-viewer/ ← ECS (OHIF) + ALB público
-│
-└── thesis_material/
+│   ├── types/ ← Tipos TypeScript
+│   ├── api-client/ ← Axios client
+│   └── ui/ ← shadcn/ui componentes
+└── infra/ ← Terraform Modules
 ```
 
----
+### 5.2 Flujo de Datos: Adquisición y Vinculación (APIs Federadas)
 
-### 5.2 Flujo de Datos: Adquisición y Vinculación de un Estudio DICOM
+El AROS Core API actúa como pasarela; las clínicas manejan sus propios datos.
 
-Este es el flujo central de la arquitectura. Se divide en **tres momentos diferenciados** que ocurren en distintos instantes de tiempo:
-
-**Momento 1 — El asistente registra la orden (antes del estudio)**
-**Momento 2 — La máquina toma y envía las imágenes (durante el estudio, automatizado)**
-**Momento 3 — El radiólogo lee las imágenes y emite el diagnóstico (después del estudio)**
-
-```
+```text
 ┌─ MOMENTO 1: REGISTRO DE LA ORDEN ────────────────────────────────────────────┐
 │                                                                              │
-│  ASISTENTE             PORTAL CLÍNICA         DJANGO (API)        PostgreSQL │
-│      │                       │                     │                   │     │
-│      │── nuevo pte ────────► │                     │                   │     │
-│      │   + solicitud         │── POST /api/v1/study-requests/ ────────►│     │
-│      │                       │                     │── INSERT SR ─────►│     │
-│      │                       │                     │   (AccNum gen.)   │     │
-│      │                       │                     │── INSERT Study ──►│     │
-│      │                       │                     │   (pending)       │     │
-│      │◄─ { accession_number: "ACC-2026-0042" } ────│                   │     │
-│      │                                                                       │
-│  El asistente entrega el Accession Number al técnico radiólogo               │
+│ ASISTENTE       PORTAL CLÍNICA      AROS CORE API      TGW       CLINIC INTERNAL API     CLINIC RDS │
+│    │                  │                   │             │                 │                   │ │
+│    │── registrar ────►│                   │             │                 │                   │ │
+│    │   solicitud      │── POST /req/ ────►│             │                 │                   │ │
+│    │                  │                   │── Enruta ──►│── POST /req/ ──►│                   │ │
+│    │                  │                   │             │                 │── INSERT StudyReq►│ │
+│    │                  │                   │             │                 │◄── { acc_num } ───│ │
+│    │                  │                   │◄─ { acc_num}│◄────────────────│                   │ │
+│    │◄─ { acc_num } ───│                   │             │                 │                   │ │
 └──────────────────────────────────────────────────────────────────────────────┘
 
-┌─ MOMENTO 2: ADQUISICIÓN Y TRANSMISIÓN AUTOMÁTICA ────────────────────────────┐
+┌─ MOMENTO 2: ADQUISICIÓN Y TRANSMISIÓN AUTOMÁTICA (Aislado) ──────────────────┐
 │                                                                              │
-│  TÉCNICO     MÁQUINA DICOM      ORTHANC PACS                  AWS S3         │
-│    │        (TAC/RX/MRI)     (Port 4242/8042)             (S3 Clínica)       │
-│    │             │                   │                          │            │
-│    │─ ingresa Acc│                   │                          │            │
-│    │  "ACC-2026-0042"                │                          │            │
-│    │─ realiza est│                   │                          │            │
-│    │             │── C-STORE ───────►│                          │            │
-│    │             │   (automático)    │── Plugin S3 (escribe) ──►│            │
-│    │             │                   │◄─────────────────────────│            │
-│    │             │                   │                                       │
-│    │             │                   │ [Estable: OnStableStudy]              │
-│    │             │                   │── Webhook ───────────────► Django     │
-│    │                                                             (API)       │
-│                                                                    │         │
-│                                  PostgreSQL                        │         │
-│                                      │                             │         │
-│                                      │◄── Busca StudyRequest ──────│         │
-│                                      │◄── UPDATE Study (received) ─│         │
+│ TÉCNICO     MÁQUINA DICOM      ORTHANC PACS      CLINIC INTERNAL API     CLINIC RDS │
+│    │             │                  │                    │                   │          │
+│    │── realiza ─►│                  │                    │                   │          │
+│    │   estudio   │── C-STORE ──────►│                    │                   │          │
+│    │             │                  │── Webhook local ──►│                   │          │
+│    │             │                  │  (OnStableStudy)   │── UPDATE Study ──►│          │
 │                                                                              │
-│  [Notificación WebSocket al Portal Clínica: "Nuevo estudio disponible"]      │
+│ [El AROS Core API no interviene en este flujo. Todo ocurre en la VPC local.] │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌─ MOMENTO 3: LECTURA Y DIAGNÓSTICO ───────────────────────────────────────────┐
 │                                                                              │
-│  RADIÓLOGO             PORTAL CLÍNICA         DJANGO (API)      ORTHANC PACS │
-│      │                       │                     │           (DICOMweb)    │
-│      │                       │                     │               │         │
-│      │─ ve cola ───────────► │                     │               │         │
-│      │                       │── GET /studies/ ───►│               │         │
-│      │◄─ lista con study 42 ─│                     │               │         │
-│      │                       │                     │               │         │
-│      │─ clic "Ver" ────────► │                     │               │         │
-│      │                       │── GET /viewer-url/ ─►               │         │
-│      │◄─ { viewer_url } ─────│                     │               │         │
-│      │                       │                                     │         │
-│      │─ abre OHIF ───────────┼────────────────────────────────────►│         │
-│      │                       │◄── WADO-RS (sirve frames) ──────────│         │
-│      │                       │                                               │
-│      │─ POST /reports/ ─────►│                                               │
-│      │  (hallazgos, firma)   │── INSERT Report ──► PostgreSQL                │
-│      │◄─ { report_id: 99 } ──│                                               │
+│ RADIÓLOGO       PORTAL CLÍNICA      AROS CORE API      TGW       CLINIC INTERNAL API     CLINIC RDS │
+│    │                  │                   │             │                 │                   │ │
+│    │── ve cola ──────►│                   │             │                 │                   │ │
+│    │                  │── GET /studies/ ─►│             │                 │                   │ │
+│    │                  │                   │── Enruta ──►│── GET /studies/►│                   │ │
+│    │                  │                   │             │                 │◄── [ estudios ] ──│ │
+│    │                  │                   │◄─ [ datos ] │◄────────────────│                   │ │
+│    │◄─ lista estudios─│                   │             │                 │                   │ │
+│    │                  │                   │             │                 │                   │ │
+│    │── POST /reports/►│── POST /reports/ ─►             │                 │                   │ │
+│    │                  │                   │── Enruta ──►│── POST /reports/►│                   │ │
+│    │                  │                   │             │                 │── INSERT Report ─►│ │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.3 Flujo de Datos: El Paciente Ve su Radiografía
+### 5.3 Flujo de Datos: El Paciente Ve su Radiografía (Federated Query)
 
-El paciente nunca interactúa con S3 ni con Orthanc directamente. Django le entrega una URL autenticada que apunta al OHIF Viewer preconfigurado con Orthanc como fuente DICOMweb. OHIF descarga los frames de imagen directamente de Orthanc, que a su vez los recupera del S3 de la clínica de forma transparente.
+Cuando un paciente consulta su historial, la AROS Core API realiza peticiones distribuidas en paralelo.
 
+```text
+PACIENTE          PORTAL PACIENTE       AROS CORE API       TGW          CLINIC API (A)   CLINIC API (B)
+   │                     │                    │              │                 │                │
+   │── ver historial ───►│                    │              │                 │                │
+   │                     │── GET /history/ ──►│              │                 │                │
+   │                     │                    │── httpx ────►│── req Clinic A ─►                │
+   │                     │                    │── httpx ────►│─────────────────────────────────►│ req Clinic B
+   │                     │                    │              │                 │                │
+   │                     │                    │◄── datos A ──│◄────────────────│                │
+   │                     │                    │◄── datos B ──│◄─────────────────────────────────│
+   │                     │                    │ (Consolida)  │                 │                │
+   │◄─ lista unificada ──│◄─ [ json ] ────────│ (Libera RAM) │                 │                │
 ```
-PACIENTE            PORTAL PACIENTE         DJANGO (API)       ORTHANC (PACS)    S3 (Clínica)
-   │                       │                     │                    │                │
-   │─ login ─────────────► │                     │                    │                │
-   │                       │─ POST /login/ ─────►│                    │                │
-   │◄─ dashboard ──────────│                     │                    │                │
-   │                       │                     │                    │                │
-   │─ ver historial ──────►│                     │                    │                │
-   │                       │─ GET /studies/ ────►│                    │                │
-   │                       │                     │─ SELECT Studies ──►│                │
-   │◄─ lista estudios ─────│                     │                    │                │
-   │                       │                     │                    │                │
-   │─ clic "Ver" ─────────►│                     │                    │                │
-   │                       │─ GET /viewer-url/ ─►│                    │                │
-   │                       │                     │─ IsStudyOwner?     │                │
-   │◄─ { viewer_url } ─────│                     │                    │                │
-   │                       │                                          │                │
-   │─ abre viewer_url ─────┼─────────────────────────────────────────►│                │
-   │                       │◄─ GET /dicom-web/studies/{uid} ──────────│                │
-   │                       │                                          │─ lee .dcm ────►│
-   │                       │◄─ frames DICOM (renderizados) ───────────│                │
-```
-
----
 
 ## 6. Infraestructura Cloud (AWS Organizations)
 
+
+
 ### 6.1 Diagrama de Infraestructura Multi-Cuenta
 
-```
-┌────────────────────────────────────────── AWS ORGANIZATION (aros-mgmt) ─────────────────────────────────────────┐
-│                                                                                                                  │
-│  ┌───────────────────────────────────── OU: Core Services ─────────────────────────────────────────────────┐   │
-│  │  CUENTA: aros-core  (VPC: 10.0.0.0/16)                                                                  │   │
-│  │                                                                                                          │   │
-│  │  Route 53:  api.arospacs.com  ──► ALB Público Django                                                     │   │
-│  │             *.arospacs.com    ──► AWS Amplify (portales Next.js)                                         │   │
-│  │                                                                                                          │   │
-│  │  ┌─── Subnets Públicas ──────────────────────────────────────────────────────────────────────────────┐  │   │
-│  │  │  ALB Público → ECS Django (DRF + JWT)                                                             │  │   │
-│  │  │  ALB Público → ECS OHIF Viewer                                                                    │  │   │
-│  │  └───────────────────────────────────────────────────────────────────────────────────────────────────┘  │   │
-│  │  ┌─── Subnets Privadas ──────────────────────────────────────────────────────────────────────────────┐  │   │
-│  │  │                                                                                                    │  │   │
-│  │  │  ECS Django  ──httpx.stream()──► TGW ──► ALB Interno Clínica ──► Orthanc :8042 (cross-account)   │  │   │
-│  │  │  ECS Django  ◄── Webhook OnStableStudy ─── TGW ◄── Orthanc (cross-account)                       │  │   │
-│  │  │                                                                                                    │  │   │
-│  │  │  RDS PostgreSQL 16                                                                                 │  │   │
-│  │  │    · Schema público: datos Django (Clinic, Study, Patient, Report...)                              │  │   │
-│  │  │    · Schema orthanc_san_jose: índice DICOM clínica San José                                       │  │   │
-│  │  │    · Schema orthanc_radiologia_norte: índice DICOM Radiología Norte                               │  │   │
-│  │  │    · Schema orthanc_{slug}: un schema por clínica, creado al provisionar                          │  │   │
-│  │  │                                                                                                    │  │   │
-│  │  │  ElastiCache Redis (WebSockets)                                                                    │  │   │
-│  │  │  ECR (imágenes Docker: django, orthanc-custom, ohif)                                              │  │   │
-│  │  │  Secrets Manager (DATABASE_URL, SECRET_KEY, WEBHOOK_SECRET)                                       │  │   │
-│  │  │  AWS Amplify (Portal Paciente + Portal Clínica)                                                   │  │   │
-│  │  │                                                                                                    │  │   │
-│  │  │  ┌─── AWS Transit Gateway (TGW) ───────────────────────────────────────────────────────────────┐  │  │   │
-│  │  │  │  Owner: aros-core · Compartido via RAM a toda la OU Clinic Workloads                        │  │  │   │
-│  │  │  │  TGW Route Table:                                                                           │  │  │   │
-│  │  │  │    10.0.0.0/16 → Core VPC (aros-core)                                                      │  │  │   │
-│  │  │  │    10.1.0.0/16 → Attachment VPC clinic-san-jose                                            │  │  │   │
-│  │  │  │    10.2.0.0/16 → Attachment VPC clinic-radiologia-norte                                    │  │  │   │
-│  │  │  │    10.N.0.0/16 → Attachment VPC clinic-{N} (se agrega al provisionar)                     │  │  │   │
-│  │  │  └─────────────────────────────────────────────────────────────────────────────────────────────┘  │  │   │
-│  │  └───────────────────────────────────────────────────────────────────────────────────────────────────┘  │   │
-│  └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                                                  │
-│  ┌───────────────────────────────────── OU: Clinic Workloads ──────────────────────────────────────────────┐   │
-│  │                                                                                                          │   │
-│  │  ┌──── CUENTA: clinic-san-jose (VPC: 10.1.0.0/16) ──────────────────────────────────────────────────┐  │   │
-│  │  │                                                                                                    │  │   │
-│  │  │  TGW Attachment ◄──── TGW (aros-core) [tráfico solo por puertos 8042 y 8000]                     │  │   │
-│  │  │       │                                                                                           │  │   │
-│  │  │       ▼                                                                                           │  │   │
-│  │  │  ALB Interno (:8042) — Security Group: solo acepta tráfico desde 10.0.0.0/16 (Core VPC)          │  │   │
-│  │  │       │                                                                                           │  │   │
-│  │  │       ▼                                                                                           │  │   │
-│  │  │  ECS Fargate (Orthanc PACS)                                                                       │  │   │
-│  │  │    · AET: ORTHANC_SAN_JOSE                                                                        │  │   │
-│  │  │    · ENV: ORTHANC__S3OBJECTSTORAGE__BUCKETNAME=orthanc-san-jose-dicom  (Estático)                 │  │   │
-│  │  │    · ENV: ORTHANC__POSTGRESQL__SCHEMA=orthanc_san_jose                 (Estático)                 │  │   │
-│  │  │    · Webhook OnStableStudy → Django via TGW                                                       │  │   │
-│  │  │       │                                                                                           │  │   │
-│  │  │       ├──── Plugin S3 ────► S3 Bucket: orthanc-san-jose-dicom                                    │  │   │
-│  │  │       │                    (Privado · KMS · Versionado · Sin acceso público)                      │  │   │
-│  │  │       │                                                                                           │  │   │
-│  │  │       └──── Plugin PostgreSQL → RDS aros-core (schema: orthanc_san_jose) via TGW                 │  │   │
-│  │  │                                                                                                   │  │   │
-│  │  │  IAM Task Role: acceso exclusivo a orthanc-san-jose-dicom (bucket policy)                        │  │   │
-│  │  │  CloudTrail: audit trail HIPAA de esta cuenta                                                    │  │   │
-│  │  └──────────────────────────────────────────────────────────────────────────────────────────────────┘  │   │
-│  │                                                                                                          │   │
-│  │  ┌──── CUENTA: clinic-radiologia-norte (VPC: 10.2.0.0/16) ──────────────────────────────────────────┐  │   │
-│  │  │  (Idéntica estructura de red, ECS y S3, totalmente aislada)                                       │  │   │
-│  │  │  · AET: ORTHANC_RADIOLOGIA_NORTE                                                                  │  │   │
-│  │  │  · S3: orthanc-radiologia-norte-dicom                                                             │  │   │
-│  │  └──────────────────────────────────────────────────────────────────────────────────────────────────┘  │   │
-│  │                                                                                                          │   │
-│  │  ┌──── CUENTA: clinic-{N} (VPC: 10.N.0.0/16) ─────────────────────────────────────────────────────┐  │   │
-│  │  │  (Provisionada automáticamente por el pipeline al onboardear una nueva clínica)                  │  │   │
-│  │  │  VPC CIDR asignado secuencialmente — registrado en Clinic.vpc_cidr en la BD central             │  │   │
-│  │  └──────────────────────────────────────────────────────────────────────────────────────────────────┘  │   │
-│  └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                                                  │
-│  ┌──────────────────────── OU: Security & Logging ────────────────────────────────────────────────────────┐   │
-│  │  CUENTA: aros-security                                                                                  │   │
-│  │  · AWS Security Hub: agrega findings de todas las cuentas                                               │   │
-│  │  · AWS Config: reglas de cumplimiento HIPAA (cifrado S3, MFA, no public access)                        │   │
-│  │  · CloudTrail Lake: logs centralizados de todas las cuentas                                             │   │
-│  └────────────────────────────────────────────────────────────────────────────────────────────────────────┘   │
+```text
+┌────────────────────────────────────────── AWS ORGANIZATION (aros-mgmt) ───────────────────────────────────────┐
+│                                                                                                               │
+│  ┌───────────────────────────────────── OU: Core Services ─────────────────────────────────────────────────┐  │
+│  │  CUENTA: aros-core  (VPC: 10.0.0.0/16)                                                                  │  │
+│  │                                                                                                         │  │
+│  │  Route 53:  api.arospacs.com  ──► ALB Público AROS Core                                                 │  │
+│  │             *.arospacs.com    ──► AWS Amplify (portales Next.js)                                        │  │
+│  │                                                                                                         │  │
+│  │  ┌─── Subnets Públicas ──────────────────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  ALB Público → ECS AROS Core API (Django/FastAPI)                                                 │  │  │
+│  │  │  ALB Público → ECS OHIF Viewer                                                                    │  │  │
+│  │  └───────────────────────────────────────────────────────────────────────────────────────────────────┘  │  │
+│  │  ┌─── Subnets Privadas ──────────────────────────────────────────────────────────────────────────────┐  │  │
+│  │  │                                                                                                   │  │  │
+│  │  │  ECS Core API ──httpx.stream()──► TGW ──► ALB Interno Clínica ──► Orthanc Proxy (cross-account)   │  │  │
+│  │  │  ECS Core API ──httpx.async()───► TGW ──► ALB Interno Clínica ──► Clinic API (cross-account)      │  │  │
+│  │  │                                                                                                   │  │  │
+│  │  │  RDS PostgreSQL 16 (AROS Core)                                                                    │  │  │
+│  │  │    · Schema público: Identity Provider, Roles, ClinicRegistry (CERO datos clínicos)               │  │  │
+│  │  │                                                                                                   │  │  │
+│  │  │  ElastiCache Redis (WebSockets / Celery)                                                          │  │  │
+│  │  │  ECR (imágenes Docker: core-api, clinic-api, orthanc-custom, ohif)                                │  │  │
+│  │  │  Secrets Manager (Base de datos, JWT Secrets)                                                     │  │  │
+│  │  │                                                                                                   │  │  │
+│  │  │  ┌─── AWS Transit Gateway (TGW) ───────────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │  Owner: aros-core · Compartido via RAM a toda la OU Clinic Workloads                        │  │  │  │
+│  │  │  │  TGW Route Table:                                                                           │  │  │  │
+│  │  │  │    10.0.0.0/16 → Core VPC (aros-core)                                                       │  │  │  │
+│  │  │  │    10.1.0.0/16 → Attachment VPC clinic-san-jose                                             │  │  │  │
+│  │  │  │    10.2.0.0/16 → Attachment VPC clinic-radiologia-norte                                     │  │  │  │
+│  │  │  │    10.N.0.0/16 → Attachment VPC clinic-{N} (se agrega al provisionar)                       │  │  │  │
+│  │  │  └─────────────────────────────────────────────────────────────────────────────────────────────┘  │  │  │
+│  │  └───────────────────────────────────────────────────────────────────────────────────────────────────┘  │  │
+│  └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                                               │
+│  ┌───────────────────────────────────── OU: Clinic Workloads ──────────────────────────────────────────────┐  │
+│  │                                                                                                         │  │
+│  │  ┌──── CUENTA: clinic-san-jose (VPC: 10.1.0.0/16) ──────────────────────────────────────────────────┐ │    │
+│  │  │                                                                                                  │ │    │
+│  │  │  TGW Attachment ◄──── TGW (aros-core) [Tráfico enrutado a ALB Interno]                           │ │    │
+│  │  │       │                                                                                          │ │    │
+│  │  │       ▼                                                                                          │ │    │
+│  │  │  ALB Interno — Security Group: solo acepta tráfico desde 10.0.0.0/16 (Core VPC)                  │ │    │
+│  │  │       │                                                                                          │ │  │
+│  │  │       ├─────────► ECS Fargate (Clinic Internal API)                                              │ │  │
+│  │  │       │             · Gestiona /studies/ y /reports/ localmente                                  │ │  │
+│  │  │       │             · Recibe Webhook OnStableStudy de Orthanc (localhost/VPC)                    │ │  │
+│  │  │       │             │                                                                            │ │  │
+│  │  │       │             └────► RDS PostgreSQL (Clinic DB: StudyRequest, Study, Report)               │ │  │
+│  │  │       │                                                                                          │ │  │
+│  │  │       └─────────► ECS Fargate (Orthanc PACS)                                                     │ │  │
+│  │  │                     · DICOM C-STORE: Recibe de Modalidades (Puerto 4242)                         │ │  │
+│  │  │                     · Plugin S3 ────► S3 Bucket: orthanc-san-jose-dicom                          │ │  │
+│  │  │                                      (Privado · KMS · Versionado · Sin acceso público)           │ │  │
+│  │  │                     · Plugin PostgreSQL → RDS PostgreSQL (Clinic DB, esquema orthanc)            │ │  │
+│  │  │                                                                                                  │ │  │
+│  │  │  CloudTrail: audit trail HIPAA de esta cuenta (Propiedad de la clínica)                          │ │  │
+│  │  └──────────────────────────────────────────────────────────────────────────────────────────────────┘ │  │
+│  │                                                                                                         │  │
+│  │  ┌──── CUENTA: clinic-radiologia-norte (VPC: 10.2.0.0/16) ──────────────────────────────────────────┐ │  │
+│  │  │  (Idéntica estructura de red, ECS y S3, totalmente aislada)                                      │ │  │
+│  │  │  · Clinic DB: RDS Local (Aislado)                                                                │ │  │
+│  │  │  · S3: orthanc-radiologia-norte-dicom                                                            │ │  │
+│  │  └──────────────────────────────────────────────────────────────────────────────────────────────────┘ │  │
+│  │                                                                                                         │  │
+│  │  ┌──── CUENTA: clinic-{N} (VPC: 10.N.0.0/16) ─────────────────────────────────────────────────────┐ │  │
+│  │  │  (Provisionada automáticamente por Terraform Pipeline al onboardear clínica)                     │ │  │
+│  │  └──────────────────────────────────────────────────────────────────────────────────────────────────┘ │  │
+│  └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                                                 │
+│  ┌──────────────────────── OU: Security & Logging ────────────────────────────────────────────────────────┐  │
+│  │  CUENTA: aros-security                                                                                 │  │
+│  │  · AWS Security Hub: agrega findings de todas las cuentas                                              │  │
+│  │  · AWS Config: reglas de cumplimiento HIPAA (cifrado S3, MFA, no public access)                        │  │
+│  │  · CloudTrail Lake: logs centralizados de todas las cuentas                                            │  │
+│  └────────────────────────────────────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -785,6 +596,9 @@ Cada petición a Django pasa por 4 capas de verificación antes de ejecutarse:
 
 ---
 
+### 7.5 Beneficios de Cumplimiento de la Arquitectura "Zero-Data"
+La adopción estricta de una arquitectura "Zero Clinical Data Retention" en la plataforma central simplifica radicalmente la auditoría y el cumplimiento de normativas de salud como HIPAA. Al delegar el almacenamiento de la información médica protegida (PHI) hacia las cuentas aisladas de cada clínica y operar AROS únicamente como un Identity Provider y Gateway de enrutamiento en tiempo real, se descentraliza la responsabilidad legal. Un hipotético compromiso de seguridad en la cuenta central de AROS no expondría historiales clínicos, imágenes ni diagnósticos, ya que estos datos nunca residen en los discos o bases de datos de `aros-core`.
+
 ## 8. Plan de Implementación — Tareas
 
 ### Fase 0 — Limpieza de Dependencias Legacy y Preparación del Monorepo *(Día 1-2)*
@@ -800,135 +614,44 @@ Cada petición a Django pasa por 4 capas de verificación antes de ejecutarse:
 - [ ] Crear carpetas vacías: `packages/types`, `packages/api-client`, `packages/ui`
 - [ ] Crear `turbo.json` con pipeline de tareas (dev, build, lint, type-check)
 
-### Fase 1 — Refactorizar Modelos Django *(Semana 1)*
-- [ ] Eliminar todas las carpetas `templates/` del backend (corte total sin migración gradual)
-- [ ] Eliminar todas las carpetas `static/` del backend
-- [ ] Eliminar todos los archivos `forms.py` del backend
-- [ ] Crear la app `clinicDashboard` con los modelos `Clinic`, `ClinicUser`, `PatientClinicLink`
-- [ ] Agregar campos de white-labeling al modelo `Clinic` (`primary_color`, `secondary_color`, `accent_color`, `logo`, `favicon`)
-- [ ] Agregar campo `accession_number` al modelo `StudyRequest` — campo único auto-generado al crear la solicitud (formato `ACC-{año}-{id:04d}`)
-- [ ] Agregar campo `orthanc_study_id` al modelo `Study` (string, nullable hasta que Orthanc lo llene vía Webhook)
-- [ ] Agregar campo `dicom_study_uid` al modelo `Study` (el `StudyInstanceUID` DICOM estándar que retorna Orthanc)
-- [ ] Agregar FK `study_request` al modelo `Study` (OneToOne, se llena en el Webhook)
-- [ ] Agregar FK `clinic` al modelo `Study`
-- [ ] Crear y ejecutar las migraciones de base de datos
+### Fase 1 — Arquitectura del Monorepo *(Semana 1)*
+- [ ] Eliminar la antigua carpeta `apps/backend/`.
+- [ ] Crear la estructura `apps/core-api/` (Identity Provider & Gateway).
+- [ ] Crear la estructura `apps/clinic-api/` (Microservicio de la clínica).
+- [ ] Definir modelos `User`, `PatientProfile`, `ClinicRegistry`, `Roles` en `core-api`.
+- [ ] Definir modelos `StudyRequest`, `Study`, `Report` en `clinic-api`.
 
-### Fase 2 — Instalar y Configurar DRF *(Semana 1-2)*
-- [ ] Agregar `djangorestframework`, `simplejwt`, `django-cors-headers`, `drf-spectacular`, `httpx` a `requirements.txt`
-- [ ] Registrar las nuevas apps en `INSTALLED_APPS` en `settings.py`
-- [ ] Configurar el middleware de CORS
+### Fase 2 — Autenticación en AROS Core API *(Semana 2)*
+- [ ] Implementar JWT en `core-api` con roles y claims.
+- [ ] Configurar middleware de seguridad y CORS.
 
-### Fase 3 — Configuración de Seguridad *(Semana 2)*
-- [ ] Configurar `REST_FRAMEWORK` con `IsAuthenticated` global por defecto y Throttling activado
-- [ ] Configurar `SIMPLE_JWT` (15 min access, 7 días refresh, rotación, blacklist)
-- [ ] Configurar CORS con lista explícita de orígenes permitidos desde variable de entorno
-- [ ] Configurar headers de seguridad HTTP para producción (HSTS, HTTPS redirect, nosniff, etc.)
-- [ ] Crear `api/throttles.py` con throttle de login (10/hora)
-- [ ] Crear `api/permissions.py` con `IsPatient`, `IsAssistant`, `IsReportingDoctor`, `IsClinicAdmin`, `IsStudyOwner`
-- [ ] Implementar vista de login con cookie HttpOnly para el Refresh Token
-- [ ] Implementar vista de refresh que lee desde la cookie
-- [ ] Implementar vista de logout con blacklist y borrado de cookie
+### Fase 3 — Federated Query en AROS Core API *(Semana 2-3)*
+- [ ] Implementar cliente HTTP asíncrono (`httpx`) en `core-api`.
+- [ ] Implementar patrón Federated Query: `GET /patient/history/` dispara peticiones concurrentes a las URLs internas de las clínicas registradas para el paciente.
+- [ ] Configurar proxy WADO-RS transparente en `core-api` hacia los ALBs internos de las clínicas.
 
-### Fase 4 — Endpoints de la API Django *(Semana 2-3)*
-- [ ] Crear app `api/` con estructura de vistas (auth, patient, clinic, webhook)
-- [ ] Crear `api/orthanc_client.py` — cliente `httpx` para la API REST interna de Orthanc
-- [ ] Crear `api/serializers.py` con serializers para StudyRequest (con `accession_number`), Study, Report, Patient, Clinic
-- [ ] Implementar la lógica de auto-generación de `accession_number` al crear una `StudyRequest` (señal `post_save` o método `save()` sobreescrito)
-- [ ] Implementar `api/views/webhook_views.py` — receptor del Webhook `OnStableStudy` de Orthanc:
-- Extraer `accession_number` del payload
-- Buscar la `StudyRequest` correspondiente (`WHERE accession_number = ?`)
-- Crear el `Study` vinculado con `orthanc_study_id` y `dicom_study_uid`
-- Actualizar `StudyRequest.status` a `"received"`
-- Emitir evento WebSocket al Portal Clínica ("Nuevo estudio en cola")
-- [ ] Implementar todos los endpoints del Portal Paciente, incluyendo `GET /studies/{id}/viewer-url/` (construye URL OHIF con `dicom_study_uid`)
-- [ ] Implementar todos los endpoints del Portal Clínica (Asistente, Radiólogo, Admin)
-- [ ] Implementar endpoint `GET /clinic/study-requests/{id}/accession-number/` — para mostrar el número al asistente después de crear la solicitud
-- [ ] Implementar endpoint de tema para white-labeling (`AllowAny`)
-- [ ] Configurar el router DRF y las URLs bajo `/api/v1/`
-- [ ] Verificar que la documentación Swagger/OpenAPI se genera correctamente
+### Fase 4 — Clinic Internal API y Webhooks Locales *(Semana 3-4)*
+- [ ] Implementar endpoints en `clinic-api` para gestionar `StudyRequest` y `Report`.
+- [ ] Implementar receptor local de Webhooks en `clinic-api` para vincular estudios.
+- [ ] Dockerizar el `clinic-api`.
 
-### Fase 5 — Orthanc PACS: Dockerización y Configuración *(Semana 3-4)*
-- [ ] Crear `apps/orthanc/` con el `Dockerfile` personalizado de Orthanc
-- [ ] Instalar los plugins oficiales dentro del Dockerfile: `liborthanc-dicomweb-plugin`, `liborthanc-postgresql-plugin`, `liborthanc-object-storage-plugin` (AWS S3)
-- [ ] Crear el archivo `orthanc.json` con la configuración base:
-- Habilitar la API REST en el puerto **8042**
-- Habilitar el SCP DICOM (C-STORE) en el puerto **4242**
-- Configurar el `DicomAet` (AET) de Orthanc: `"MEDCLOUD_ORTHANC"` — este es el nombre que se configura en la máquina de radiología como destino
-- Configurar `KnownAETities` con los AETs de las máquinas de radiología autorizadas por clínica (lista blanca de modalidades)
-- Configurar el plugin DICOMweb en el path `/dicom-web`
-- Configurar el plugin PostgreSQL apuntando al RDS (credenciales desde variables de entorno)
-- Configurar el plugin AWS S3 para leer las credenciales desde AWS Secrets Manager
-- Configurar los Webhooks: `OnStableStudy` → `POST http://django.internal:8000/api/v1/webhooks/orthanc/study-stable/` con payload incluyendo `AccessionNumber`
-- [ ] Abrir el puerto 4242 (DICOM C-STORE) en el Security Group de Orthanc (solo accesible desde la red privada/VPN de las clínicas)
-- [ ] Probar la recepción de un estudio via C-STORE usando `storescu` (herramienta DCMTK) desde la red local simulando una modalidad
-- [ ] Verificar que Orthanc indexa correctamente el Accession Number del estudio recibido
-- [ ] Probar que Orthanc persiste el archivo en el bucket S3 de prueba
-- [ ] Probar que el Webhook `OnStableStudy` llega a Django con el `accession_number` correcto y que Django crea el `Study` vinculado a la `StudyRequest`
+### Fase 5 — Configuración de Orthanc PACS *(Semana 4)*
+- [ ] Configurar el archivo `orthanc.json`.
+- [ ] Configurar Orthanc para enviar el Webhook `OnStableStudy` hacia la URL local del `clinic-api` (dentro de la misma VPC, sin salir a internet).
 
-### Fase 6 — BYOS S3 + AWS Secrets Manager *(Semana 4)*
-- [ ] Implementar `get_s3_credentials()` en el modelo `Clinic` (llama a Secrets Manager)
-- [ ] Implementar `POST /clinic/settings/s3/` — guarda credenciales en Secrets Manager, devuelve solo el ARN; el ARN se almacena en la BD para que Orthanc lo use al inicializar el plugin
-- [ ] Implementar `GET /studies/{id}/viewer-url/` — construye la URL completa de OHIF con el `StudyInstanceUID` de Orthanc, apuntando al proxy Django (`/api/v1/dicom-web/{clinic_slug}/`)
+### Fase 6 — Portales Frontend *(Semana 5-7)*
+- [ ] Conectar Portal Clínica y Portal Paciente al AROS Core API.
+- [ ] Renderizar visor OHIF utilizando la ruta proxy WADO-RS del Core API.
 
-### Fase 7 — JWT con Roles *(Semana 4)*
-- [ ] Crear `MedCloudTokenSerializer` con payload enriquecido (`email`, `full_name`, `role`, `clinic_id`, `clinic_slug`)
-- [ ] Registrar el serializer en la configuración de SimpleJWT
-
-### Fase 8 — Packages TypeScript Compartidos *(Semana 4-5)*
-- [ ] Definir todos los tipos en `packages/types/src/index.ts` (incluyendo `orthanc_study_id` en `Study`)
-- [ ] Implementar el cliente Axios con interceptor JWT en `packages/api-client/src/client.ts`
-- [ ] Configurar los componentes base en `packages/ui/`
-
-### Fase 9 — Portal Paciente *(Semana 5-6)*
-- [ ] Inicializar proyecto Next.js 15 con TypeScript y Tailwind CSS
-- [ ] Configurar shadcn/ui
-- [ ] Implementar el store de autenticación con Zustand
-- [ ] Implementar la página de login con manejo de JWT
-- [ ] Implementar el dashboard con historial de estudios via TanStack Query
-- [ ] Implementar la página de detalle del estudio con reporte médico
-- [ ] Implementar el botón "Ver en Visor" — llama a `GET /studies/{id}/viewer-url/` y abre la URL de OHIF (que apunta a Orthanc DICOMweb)
-- [ ] Implementar la gestión de clínicas autorizadas
-
-### Fase 10 — Portal Clínica *(Semana 6-7)*
-- [ ] Inicializar proyecto Next.js 15
-- [ ] Implementar el middleware de white-labeling (subdominio → CSS Variables)
-- [ ] Implementar el layout raíz con inyección de tema
-- [ ] Implementar la lógica de redirección por rol en el middleware
-- [ ] Implementar el dashboard del Asistente (lista de solicitudes, búsqueda de pacientes, nueva solicitud)
-- [ ] Implementar el dashboard del Radiólogo:
-- Cola de estudios en estado `"received"` (llegaron automáticamente desde las máquinas vía C-STORE)
-- Indicador visual de nuevos estudios (WebSocket, actualización en tiempo real)
-- Botón "Ver imágenes" — llama a `GET /studies/{id}/viewer-url/` y abre OHIF apuntando a Orthanc con el `dicom_study_uid`
-- **No hay formulario de upload manual** — las imágenes llegan solas desde la máquina
-- Formulario de redacción y firma del reporte médico (hallazgos, conclusiones, recomendaciones)
-- [ ] Implementar el dashboard del Administrador (usuarios, configuración S3/BYOS, branding)
-
-### Fase 11 — OHIF Viewer: Configuración y Dockerización *(Semana 7)*
-- [ ] Clonar el repositorio de OHIF Viewer v3
-- [ ] Configurar `apps/dicom-viewer/config/default.js` para apuntar a Orthanc como fuente DICOMweb
-- `wadoUriRoot`: `https://api.arospacs.com/api/v1/dicom-web/{clinic_slug}`
-- `qidoRoot`: `https://api.arospacs.com/api/v1/dicom-web/{clinic_slug}`
-- `wadoRoot`: `https://api.arospacs.com/api/v1/dicom-web/{clinic_slug}`
-- [ ] Crear el `Dockerfile` de OHIF (build con Node.js, serve con Nginx)
-- [ ] Crear `nginx.conf` con CORS habilitado para los dominios de los portales
-- [ ] Probar el flujo completo: OHIF → Orthanc (WADO-RS) → S3 → imagen en pantalla
-
-### Fase 12 — Terraform: Infraestructura en AWS *(Semana 8-9)*
-- [ ] Crear el bucket S3 para el estado remoto de Terraform y la tabla DynamoDB para bloqueo de estado
-- [ ] Implementar el módulo `networking` (VPC, subnets, gateways, security groups)
-- [ ] Implementar el módulo `database` (RDS PostgreSQL compartido entre Django y Orthanc)
-- [ ] Implementar el módulo `cache` (ElastiCache Redis)
-- [ ] Implementar el módulo `backend` (ECS Fargate Django + ALB público)
-- [ ] Implementar el módulo `orthanc` (ECS Fargate Orthanc + **ALB interno** + Security Group restrictivo)
-- [ ] Implementar el módulo `dicom-viewer` (ECS Fargate OHIF + ALB público)
-- [ ] Implementar el módulo `patient-portal` (Amplify)
-- [ ] Implementar el módulo `clinic-portal` (Amplify + subdominios wildcard)
-- [ ] Ejecutar `terraform plan` para verificar el plan sin efectos secundarios
-- [ ] Ejecutar `terraform apply` para desplegar toda la infraestructura
-- [ ] Verificar conectividad entre Django ↔ Orthanc dentro de la VPC
-- [ ] Verificar conectividad OHIF → Django Proxy y luego Django Proxy → Orthanc (flujo Transit Gateway)
-
----
+### Fase 7 — Terraform: Aprovisionamiento Automatizado *(Semana 8-9)*
+- [ ] Módulo central `aros-core`: ECS Core API, RDS Central, Transit Gateway.
+- [ ] Módulo de aprovisionamiento de Clínica ("Plug & Play"):
+  - [ ] ALB Interno.
+  - [ ] ECS Fargate para **Orthanc PACS**.
+  - [ ] ECS Fargate para **Clinic Internal API**.
+  - [ ] RDS PostgreSQL local.
+  - [ ] S3 Bucket (DICOM).
+- [ ] Probar el despliegue automático de una clínica nueva y la interconexión por TGW.
 
 ## 9. Resumen de Tecnologías
 

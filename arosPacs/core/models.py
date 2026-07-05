@@ -10,14 +10,14 @@ from datetime import datetime
 class Study(models.Model):
     """
     Represents a concrete radiological study, created once an initial StudyRequest 
-    has been synced with the external Raditech PACS/RIS system.
+    has been processed by the PACS system.
     
     Acts as the main junction point between a Patient, the original Request, 
     and the final Medical Report.
     """
     id_study = models.AutoField(primary_key=True)
     
-    # URL to the DICOM viewer provided by Raditech (populated asynchronously)
+    # URL to the DICOM viewer (OHIF)
     pacs_url = models.CharField(max_length=500, blank=True, default='')
     
     # Tracks if the final results email was successfully dispatched to the patient
@@ -26,8 +26,6 @@ class Study(models.Model):
     # The date the study was performed
     date = models.DateField()
     
-    # Identifiers returned by the external Raditech integration
-    raditech_visit_id = models.CharField(max_length=100, null=True, blank=True)
     accession_number = models.CharField(max_length=100, null=True, blank=True)
     
     # Relationships
