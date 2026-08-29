@@ -1,0 +1,4 @@
+
+# RSA Keys — NEVER commit private keys
+identity/local_keys/
+*.pem

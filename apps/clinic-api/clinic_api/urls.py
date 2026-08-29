@@ -15,8 +15,16 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from clinic_api.views import health_check, ready_check
+from clinical_data.views.orthanc_webhook import OrthancWebhookView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/clinical/', include('clinical_data.urls')),
+    path('api/v1/clinic/webhooks/orthanc/', OrthancWebhookView.as_view(), name='orthanc_webhook_alias'),
+    path('health/', health_check, name='health_check'),
+    path('ready/', ready_check, name='ready_check'),
 ]
+
+

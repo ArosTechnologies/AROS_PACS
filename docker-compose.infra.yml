@@ -1,0 +1,67 @@
+services:
+  orthanc-db:
+    image: postgres:15-alpine
+    container_name: aros-orthanc-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-aros_clinic}
+      POSTGRES_USER: ${DB_USER:-aros_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aros_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - orthanc_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  orthanc:
+    build:
+      context: ./apps/orthanc
+      dockerfile: Dockerfile
+    container_name: aros-orthanc
+    ports:
+      - "8042:8042" # HTTP REST API & Web GUI
+      - "4242:4242" # DICOM port
+    env_file:
+      - ./apps/orthanc/.env
+    environment:
+      DB_HOST: orthanc-db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-aros_clinic}
+      DB_USER: ${DB_USER:-aros_user}
+      DB_PASSWORD: ${DB_PASSWORD:-aros_password}
+      CLINIC_API_URL: ${CLINIC_API_URL:-http://host.docker.internal:8001}
+    depends_on:
+      orthanc-db:
+        condition: service_healthy
+    volumes:
+      - orthanc_storage:/var/lib/orthanc/db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8042/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: aros-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  orthanc_pgdata:
+  orthanc_storage:
+  redis_data:

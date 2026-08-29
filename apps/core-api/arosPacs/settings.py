@@ -46,9 +46,11 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS')
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'drf_spectacular',
     'rest_framework_simplejwt',
     'identity',
+    'gateway',
     'daphne',
     'core.apps.CoreConfig',
     'django.contrib.admin',
@@ -81,9 +83,23 @@ else:
         },
     }
 
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -122,13 +138,17 @@ WSGI_APPLICATION = 'arosPacs.wsgi.application'
 DATABASE_URL = env('DATABASE_URL', default='')
 if DATABASE_URL:
     DATABASES = {
-        'default': env.db('DATABASE_URL'),
+        'default': {
+            **env.db('DATABASE_URL'),
+            'CONN_MAX_AGE': 60,  # Connection pooling: keep DB connections alive for 60s
+        },
     }
 else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+            'CONN_MAX_AGE': 60,
         }
     }
 
@@ -165,12 +185,8 @@ USE_TZ = True
 
 
 # Auth settings
-LOGIN_URL = 'login' 
-LOGIN_REDIRECT_URL = 'login_success'
-LOGOUT_REDIRECT_URL = 'login'
-
+# JWT-based REST API — Django session login pages are not used.
 AUTHENTICATION_BACKENDS = [
-    'core.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -224,3 +240,48 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='AROS PACS <arosPacs@gmail.com>')
 AUTH_USER_MODEL = 'identity.User'
+
+from datetime import timedelta
+import identity.aws_utils as aws_utils
+
+private_key, public_key, kid = aws_utils.get_active_rsa_keys()
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'identity.authentication.RedisBlacklistJWTAuthentication',
+    )
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'RS256',
+    'SIGNING_KEY': private_key,
+    'VERIFYING_KEY': public_key,
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'JTI_CLAIM': 'jti',
+    'TOKEN_BACKEND': 'identity.jwt_custom.CustomTokenBackend',
+}
+
+
+# CORS and Security settings
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-portal-type',
+]
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = False  # Set True in prod
+# SECURE_PROXY_SSL_HEADER already set at L99 — no duplicate here

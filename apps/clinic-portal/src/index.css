@@ -1,0 +1,252 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Outfit', system-ui, sans-serif;
+
+  /* White-label dynamic colors */
+  --color-clinic-accent: var(--clinic-primary, #0284c7); /* fallback to tailwind sky-600 */
+  --color-clinic-hover: var(--clinic-hover, #0369a1); /* fallback to tailwind sky-700 */
+
+  /* Neutral palette for Clean Enterprise */
+  --color-primary: #ffffff;
+  --color-secondary: #f8fafc; /* slate-50 */
+  --color-tertiary: #f1f5f9; /* slate-100 */
+  
+  --color-text-primary: #0f172a; /* slate-900 */
+  --color-text-secondary: #64748b; /* slate-500 */
+
+  /* Hard Edges */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-full: 0px;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-slate-50 text-slate-900 m-0 p-0 antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-bold text-slate-900;
+  }
+
+  *:focus {
+    @apply outline-none ring-0;
+  }
+}
+
+@layer components {
+  /* Square, flat enterprise cards */
+  .enterprise-card {
+    @apply bg-white border border-slate-200 transition-all duration-300;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  }
+
+  /* Buttons using dynamic CSS variables */
+  .enterprise-btn {
+    @apply bg-[var(--color-clinic-accent)] text-white px-6 py-2.5 font-bold transition-all duration-300 border border-[var(--color-clinic-accent)];
+  }
+
+  .enterprise-btn:hover {
+    @apply bg-[var(--color-clinic-hover)] border-[var(--color-clinic-hover)] -translate-y-0.5 shadow-md;
+  }
+
+  .enterprise-btn-secondary {
+    @apply bg-white border-2 border-slate-200 text-slate-700 px-6 py-2.5 font-bold transition-all duration-300;
+  }
+
+  .enterprise-btn-secondary:hover {
+    @apply border-[var(--color-clinic-accent)] text-[var(--color-clinic-accent)] bg-slate-50 -translate-y-0.5 shadow-sm;
+  }
+
+  /* Utility for dynamic text color */
+  .text-clinic-accent {
+    color: var(--color-clinic-accent);
+  }
+
+  /* Custom subtle shadow */
+  .shadow-enterprise {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* React Split Gutter Styles */
+.gutter {
+  background-color: #f1f5f9;
+  background-repeat: no-repeat;
+  background-position: 50%;
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.gutter.gutter-horizontal {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+  cursor: col-resize;
+}
+
+.gutter:hover {
+  background-color: #e2e8f0;
+}
+
+/* Custom styles for React Quill to look modern */
+.quill-modern {
+  @apply flex flex-col h-full w-full bg-white rounded-none transition-all duration-300 overflow-hidden;
+}
+
+.quill-modern:focus-within {
+  @apply border-[var(--color-clinic-accent)] ring-4 ring-[var(--color-clinic-accent)]/20;
+}
+
+.quill-modern .ql-toolbar.ql-snow {
+  @apply border-none border-b border-slate-100 bg-slate-50/80 px-4 py-2 flex gap-1 flex-wrap shadow-sm;
+}
+
+.quill-modern .ql-container.ql-snow {
+  @apply border-none flex-1 text-slate-800 text-[15px] leading-relaxed;
+}
+
+.quill-modern .ql-editor {
+  @apply p-5 min-h-[100px];
+}
+
+.quill-modern .ql-snow .ql-picker-label {
+  @apply font-bold text-slate-700;
+}
+
+/* Force Quill to use our primary color for active states */
+.quill-modern .ql-snow.ql-toolbar button:hover,
+.quill-modern .ql-snow .ql-toolbar button:hover,
+.quill-modern .ql-snow.ql-toolbar button:focus,
+.quill-modern .ql-snow .ql-toolbar button:focus,
+.quill-modern .ql-snow.ql-toolbar button.ql-active,
+.quill-modern .ql-snow .ql-toolbar button.ql-active,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label:hover,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label:hover,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label.ql-active,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label.ql-active,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item:hover,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item:hover,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item.ql-selected,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item.ql-selected {
+  color: var(--color-clinic-accent);
+}
+
+.quill-modern .ql-snow.ql-toolbar button:hover .ql-fill,
+.quill-modern .ql-snow .ql-toolbar button:hover .ql-fill,
+.quill-modern .ql-snow.ql-toolbar button:focus .ql-fill,
+.quill-modern .ql-snow .ql-toolbar button:focus .ql-fill,
+.quill-modern .ql-snow.ql-toolbar button.ql-active .ql-fill,
+.quill-modern .ql-snow .ql-toolbar button.ql-active .ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label:hover .ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label:hover .ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item:hover .ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item:hover .ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-fill,
+.quill-modern .ql-snow.ql-toolbar button:hover .ql-stroke.ql-fill,
+.quill-modern .ql-snow .ql-toolbar button:hover .ql-stroke.ql-fill,
+.quill-modern .ql-snow.ql-toolbar button:focus .ql-stroke.ql-fill,
+.quill-modern .ql-snow .ql-toolbar button:focus .ql-stroke.ql-fill,
+.quill-modern .ql-snow.ql-toolbar button.ql-active .ql-stroke.ql-fill,
+.quill-modern .ql-snow .ql-toolbar button.ql-active .ql-stroke.ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill {
+  fill: var(--color-clinic-accent);
+}
+
+.quill-modern .ql-snow.ql-toolbar button:hover .ql-stroke,
+.quill-modern .ql-snow .ql-toolbar button:hover .ql-stroke,
+.quill-modern .ql-snow.ql-toolbar button:focus .ql-stroke,
+.quill-modern .ql-snow .ql-toolbar button:focus .ql-stroke,
+.quill-modern .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.quill-modern .ql-snow .ql-toolbar button.ql-active .ql-stroke,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke,
+.quill-modern .ql-snow.ql-toolbar button:hover .ql-stroke-miter,
+.quill-modern .ql-snow .ql-toolbar button:hover .ql-stroke-miter,
+.quill-modern .ql-snow.ql-toolbar button:focus .ql-stroke-miter,
+.quill-modern .ql-snow .ql-toolbar button:focus .ql-stroke-miter,
+.quill-modern .ql-snow.ql-toolbar button.ql-active .ql-stroke-miter,
+.quill-modern .ql-snow .ql-toolbar button.ql-active .ql-stroke-miter,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke-miter,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke-miter,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke-miter,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke-miter,
+.quill-modern .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter,
+.quill-modern .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter {
+  stroke: var(--color-clinic-accent);
+}
+
+/* Custom Phone Input Styling */
+.PhoneInput-custom {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+.PhoneInput-custom .PhoneInputInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 0.875rem;
+  margin-left: 8px;
+  padding: 0;
+  height: 100%;
+  color: inherit;
+}
+.PhoneInput-custom .PhoneInputInput:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+.PhoneInput-custom .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+}
+.PhoneInput-custom .PhoneInputCountrySelectArrow {
+  margin-left: 4px;
+  opacity: 0.5;
+}

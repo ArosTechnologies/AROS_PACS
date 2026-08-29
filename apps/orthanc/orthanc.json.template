@@ -1,0 +1,44 @@
+{
+  "Name" : "AROS PACS - Clinic ${CLINIC_SLUG}",
+  "StorageDirectory" : "/var/lib/orthanc/db",
+  "IndexDirectory" : "/var/lib/orthanc/db",
+  "StorageCompression" : true,
+  "MaximumStorageSize" : 0,
+  "MaximumPatientCount" : 0,
+  "Plugins" : [
+    "/usr/share/orthanc/plugins-available/libOrthancPostgreSQLIndex.so",
+
+    "/usr/share/orthanc/plugins-available/libOrthancDicomWeb.so",
+    "/usr/share/orthanc/plugins-available/libOrthancPython.so"
+  ],
+  "PostgreSQL" : {
+    "EnableIndex" : true,
+    "EnableStorage" : false,
+    "Host" : "${DB_HOST}",
+    "Port" : ${DB_PORT},
+    "Database" : "${DB_NAME}",
+    "Username" : "${DB_USER}",
+    "Password" : "${DB_PASSWORD}",
+    "EnableSsl" : false
+  },
+
+  "PythonScript" : "/etc/orthanc/webhook.py",
+  "DicomWeb" : {
+    "Enable" : true,
+    "Root" : "/dicom-web/",
+    "EnableWado" : true,
+    "WadoRoot" : "/wado",
+    "Host" : "localhost",
+    "Ssl" : false
+  },
+  "RemoteAccessAllowed" : true,
+  "AuthenticationEnabled" : true,
+  "RegisteredUsers" : {
+    "orthanc" : "orthanc"
+  },
+  "HttpPort" : 8042,
+  "DicomPort" : 4242,
+  "DicomAet" : "AROS_PACS",
+  "DefaultEncoding" : "Utf8",
+  "StableAge" : 5
+}

@@ -15,6 +15,14 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+import os
+CORE_API_URL = "http://localhost:8000"
+CORE_API_JWKS_URL = f"{CORE_API_URL}/api/v1/.well-known/jwks.json"
+WEBHOOK_SECRET = "super-secret-hmac-key"  # Dev dummy — use env var in prod
+ORTHANC_WEBHOOK_SECRET = "local-orthanc-secret"
+ORTHANC_WADO_URL = "http://localhost:8042"  # Dev dummy — use env var in prod
+CLINIC_SLUG = os.getenv("CLINIC_SLUG", "demo-clinic")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -25,7 +33,7 @@ SECRET_KEY = 'django-insecure-gd9bwdu3vv^6zqf!vz=c5(gcay!q_@tx80nuk31m85t4o2x+(u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -37,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'clinical_data',
 ]
 

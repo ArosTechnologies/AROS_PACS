@@ -32,8 +32,8 @@ def _verify_token(token, max_age=86400):
     """
     try:
         value = signer.unsign(token, max_age=max_age)
-        return int(value)
-    except (BadSignature, SignatureExpired):
+        return value
+    except (BadSignature, SignatureExpired, ValueError):
         return None
 
 def send_verification_email(user, request):
@@ -44,7 +44,7 @@ def send_verification_email(user, request):
     token = _make_verification_token(user)
     
     # Build absolute verification URL
-    verify_url = request.build_absolute_uri(f'/core/verify-email/{token}/')
+    verify_url = request.build_absolute_uri(f'/api/v1/auth/verify-email/{token}/')
     
     # DO NOT TRANSLATE UI/EMAIL STRINGS
     subject = 'Verifica tu correo — AROS PACS'

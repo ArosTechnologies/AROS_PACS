@@ -1,1 +1,0 @@
-# Models removed in Phase 1 (Moved to clinic-api)

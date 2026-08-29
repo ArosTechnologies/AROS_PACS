@@ -2,8 +2,13 @@
   "name": "aros-pacs-monorepo",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
+    "start": "./start.sh",
+    "stop": "./stop.sh",
+    "status": "./status.sh",
     "dev": "turbo run dev",
+    "dev:all": "./start.sh",
+    "dev:infra": "docker compose -f docker-compose.infra.yml up -d",
+    "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""

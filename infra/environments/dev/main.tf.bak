@@ -1,0 +1,85 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+provider "aws" {
+  region = "us-east-1"
+  alias  = "aros_core"
+}
+
+# 1. AWS Organization
+resource "aws_organizations_organization" "org" {
+  feature_set = "ALL"
+}
+
+# 2. Member Account para Clínica X
+resource "aws_organizations_account" "clinic" {
+  name  = "AROS Clinic"
+  email = "ivanvivasga@hotmail.com"
+  
+  depends_on = [aws_organizations_organization.org]
+  role_name  = "OrganizationAccountAccessRole"
+}
+
+# 3. Provider for the Clinic Account
+provider "aws" {
+  alias  = "clinic"
+  region = "us-east-1"
+  assume_role {
+    role_arn = "arn:aws:iam::${aws_organizations_account.clinic.id}:role/OrganizationAccountAccessRole"
+  }
+}
+
+# 4. Networking Core (AROS)
+module "networking_core" {
+  source = "../../modules/account_aros/networking"
+  
+  providers = {
+    aws = aws.aros_core
+  }
+  
+  vpc_cidr = "10.0.0.0/16"
+}
+
+# 5. Networking Clinic
+module "networking_clinic" {
+  source = "../../modules/account_clinic/networking"
+  
+  providers = {
+    aws = aws.clinic
+  }
+  
+  vpc_cidr = "10.1.0.0/16"
+  depends_on = [aws_organizations_account.clinic]
+}
+
+# 6. VPC Peering
+module "vpc_peering" {
+  source = "../../modules/peering"
+  
+  providers = {
+    aws.aros_core = aws.aros_core
+    aws.clinic    = aws.clinic
+  }
+  
+  core_vpc_id         = module.networking_core.vpc_id
+  core_route_table_ids = module.networking_core.route_table_ids
+  
+  clinic_vpc_id         = module.networking_clinic.vpc_id
+  clinic_route_table_ids = module.networking_clinic.route_table_ids
+  
+  core_cidr   = "10.0.0.0/16"
+  clinic_cidr = "10.1.0.0/16"
+}

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte - {{ study.id }}</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2.5cm 2cm 2.5cm 2cm;
+            @top-center {
+                content: element(header);
+            }
+            @bottom-center {
+                content: element(footer);
+            }
+            {% if layout.body.pageBackgroundUrl %}
+            background-image: url("{{ layout.body.pageBackgroundUrl }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            {% endif %}
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #334155; /* slate-700 */
+        }
+        
+        header {
+            position: running(header);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: {{ layout.header.alignment|default:"space-between" }};
+            border-bottom: 2px solid {{ clinic.primary_color }};
+            padding-bottom: 10px;
+            margin-top: 1cm;
+        }
+
+        .header-item {
+            margin: 0 10px;
+        }
+
+        footer {
+            position: running(footer);
+            width: 100%;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 10px;
+            font-size: {{ layout.footer.fontSize|default:"10pt" }};
+            color: {{ layout.footer.color|default:"#64748b" }};
+        }
+        
+        .patient-info {
+            margin-bottom: 25px;
+            padding: {{ layout.body.sections.patient_info.container.padding|default:"15px" }};
+            background-color: {{ layout.body.sections.patient_info.container.backgroundColor|default:"#f8fafc" }};
+            border-radius: 8px;
+            border: 1px solid {{ layout.body.sections.patient_info.container.borderColor|default:"#e2e8f0" }};
+        }
+
+        .patient-info h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: {{ layout.body.sections.patient_info.title.fontSize|default:"14pt" }};
+            font-family: {{ layout.body.sections.patient_info.title.fontFamily|default:"inherit" }};
+            font-weight: {{ layout.body.sections.patient_info.title.fontWeight|default:"bold" }};
+            color: {{ layout.body.sections.patient_info.title.color|default:"#0f172a" }};
+        }
+        
+        .info-grid {
+            display: table;
+            width: 100%;
+        }
+        
+        .info-row {
+            display: table-row;
+        }
+        
+        .info-cell {
+            display: table-cell;
+            padding: 4px 0;
+            width: 50%;
+            font-size: {{ layout.body.sections.patient_info.value.fontSize|default:"11pt" }};
+            font-family: {{ layout.body.sections.patient_info.value.fontFamily|default:"inherit" }};
+            font-weight: {{ layout.body.sections.patient_info.value.fontWeight|default:"normal" }};
+            color: {{ layout.body.sections.patient_info.value.color|default:"#334155" }};
+        }
+        
+        .label {
+            font-size: {{ layout.body.sections.patient_info.label.fontSize|default:"10pt" }};
+            font-family: {{ layout.body.sections.patient_info.label.fontFamily|default:"inherit" }};
+            font-weight: {{ layout.body.sections.patient_info.label.fontWeight|default:"bold" }};
+            color: {{ layout.body.sections.patient_info.label.color|default:"#475569" }};
+            text-transform: uppercase;
+            margin-right: 5px;
+        }
+
+        .study-content {
+            margin-top: 20px;
+            background-color: {{ layout.body.sections.study_content.container.backgroundColor|default:"transparent" }};
+            padding: {{ layout.body.sections.study_content.container.padding|default:"0" }};
+        }
+
+        .study-content h3 {
+            font-size: {{ layout.body.sections.study_content.report.fontSize|default:"14pt" }};
+            font-family: {{ layout.body.sections.study_content.report.fontFamily|default:"inherit" }};
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 10px;
+        }
+        
+        .study-title {
+            font-size: {{ layout.body.sections.study_content.title.fontSize|default:"16pt" }};
+            font-family: {{ layout.body.sections.study_content.title.fontFamily|default:"inherit" }};
+            font-weight: {{ layout.body.sections.study_content.title.fontWeight|default:"bold" }};
+            color: {{ layout.body.sections.study_content.title.color|default:clinic.primary_color }};
+            border-bottom: 2px solid {{ layout.body.sections.study_content.container.borderColor|default:clinic.primary_color }};
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        
+        .report-text {
+            white-space: pre-wrap;
+            text-align: justify;
+            font-size: {{ layout.body.sections.study_content.report.fontSize|default:"12pt" }};
+            font-family: {{ layout.body.sections.study_content.report.fontFamily|default:"inherit" }};
+            font-weight: {{ layout.body.sections.study_content.report.fontWeight|default:"normal" }};
+            color: {{ layout.body.sections.study_content.report.color|default:"#334155" }};
+        }
+        
+        .signature-area {
+            margin-top: 50px;
+            text-align: right;
+            padding-right: 40px;
+            background-color: {{ layout.body.sections.signatures.container.backgroundColor|default:"transparent" }};
+        }
+        
+        .signature-line {
+            display: inline-block;
+            border-top: 1px solid {{ layout.body.sections.signatures.container.borderColor|default:"#334155" }};
+            width: 200px;
+            text-align: center;
+            padding-top: 5px;
+            font-size: {{ layout.body.sections.signatures.text.fontSize|default:"10pt" }};
+            font-family: {{ layout.body.sections.signatures.text.fontFamily|default:"inherit" }};
+            font-weight: {{ layout.body.sections.signatures.text.fontWeight|default:"bold" }};
+            color: {{ layout.body.sections.signatures.text.color|default:"#334155" }};
+        }
+
+        .watermark {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            opacity: 0.05;
+            font-size: 120pt;
+            font-weight: bold;
+            color: {{ clinic.primary_color }};
+            z-index: -1;
+            white-space: nowrap;
+        }
+        
+        /* Flex doesn't work perfectly in weasyprint for dynamic ordering, using table for header */
+        .header-table {
+            width: 100%;
+            display: table;
+        }
+        .header-cell {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .header-left { text-align: left; }
+        .header-center { text-align: center; }
+        .header-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <header>
+        <table class="header-table">
+            <tr>
+                {% for item in layout.header.items %}
+                    <td class="header-cell 
+                        {% if layout.header.alignment == 'space-between' %}
+                            {% if forloop.first %}header-left{% elif forloop.last %}header-right{% else %}header-center{% endif %}
+                        {% elif layout.header.alignment == 'center' %}
+                            header-center
+                        {% elif layout.header.alignment == 'right' %}
+                            header-right
+                        {% else %}
+                            header-left
+                        {% endif %}
+                    ">
+                        {% if item.type == 'image' %}
+                            <img src="{{ item.url }}" style="width: {{ item.width|default:'150px' }}; max-height: 80px; object-fit: contain;">
+                        {% elif item.type == 'text' %}
+                            <div style="font-size: {{ item.fontSize|default:'14pt' }}; font-weight: {{ item.fontWeight|default:'bold' }}; color: {{ item.color|default:'#0f172a' }}; font-family: {{ item.fontFamily|default:'sans-serif' }};">
+                                {{ item.content }}
+                            </div>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+        </table>
+    </header>
+
+    <footer>
+        {% if is_preview %}
+            ESTE ES UN DOCUMENTO DE PREVISUALIZACIÓN - NO VÁLIDO PARA DIAGNÓSTICO
+            <br>
+        {% endif %}
+        {{ layout.footer.text|default:clinic.address }}
+    </footer>
+
+    {% if is_preview %}
+    <div class="watermark">PREVIEW</div>
+    {% endif %}
+
+    {% for block in layout.body.blocks %}
+        {% if block == 'patient_info' %}
+            <div class="patient-info">
+                <h2>Información del Paciente</h2>
+                <div class="info-grid">
+                    <div class="info-row">
+                        <div class="info-cell"><span class="label">Paciente:</span> {{ study.patient_name|default:"Juan Pérez" }}</div>
+                        <div class="info-cell"><span class="label">ID Paciente:</span> {{ study.patient_id|default:"PT-0001" }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-cell"><span class="label">Fecha del Estudio:</span> {{ study.study_date|default:"2026-08-26" }}</div>
+                        <div class="info-cell"><span class="label">Modalidad:</span> {{ study.modality|default:"MR" }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-cell"><span class="label">Médico Referente:</span> {{ study.referring_physician|default:"Dr. House" }}</div>
+                        <div class="info-cell"><span class="label">Acceso (UID):</span> {{ study.study_instance_uid|slice:":20"|default:"1.2.840.113619.2..." }}...</div>
+                    </div>
+                </div>
+            </div>
+        {% elif block == 'study_content' %}
+            <div class="study-content">
+                <div class="study-title">{{ study.study_description|default:"Estudio Radiológico" }}</div>
+                
+                <h3>Hallazgos y Diagnóstico</h3>
+                <div class="report-text">{{ study.report_text|default:"(No hay reporte finalizado asociado a este estudio aún.)\n\nSin embargo, este documento sirve como comprobante de realización del estudio." }}</div>
+            </div>
+        {% elif block == 'signatures' %}
+            <div class="signature-area">
+                <div class="signature-line">
+                    Firma del Médico Radiólogo
+                </div>
+            </div>
+        {% endif %}
+    {% empty %}
+        <div class="patient-info">
+            <h2>Información del Paciente</h2>
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-cell"><span class="label">Paciente:</span> {{ study.patient_name|default:"Juan Pérez" }}</div>
+                    <div class="info-cell"><span class="label">ID Paciente:</span> {{ study.patient_id|default:"PT-0001" }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-cell"><span class="label">Fecha del Estudio:</span> {{ study.study_date|default:"2026-08-26" }}</div>
+                    <div class="info-cell"><span class="label">Modalidad:</span> {{ study.modality|default:"MR" }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-cell"><span class="label">Médico Referente:</span> {{ study.referring_physician|default:"Dr. House" }}</div>
+                    <div class="info-cell"><span class="label">Acceso (UID):</span> {{ study.study_instance_uid|slice:":20"|default:"1.2.840.113619.2..." }}...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="study-content">
+            <div class="study-title">{{ study.study_description|default:"Estudio Radiológico" }}</div>
+            
+            <h3>Hallazgos y Diagnóstico</h3>
+            <div class="report-text">{{ study.report_text|default:"(No hay reporte finalizado asociado a este estudio aún.)\n\nSin embargo, este documento sirve como comprobante de realización del estudio." }}</div>
+        </div>
+
+        <div class="signature-area">
+            <div class="signature-line">
+                Firma del Médico Radiólogo
+            </div>
+        </div>
+    {% endfor %}
+</body>
+</html>
