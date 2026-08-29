@@ -1,46 +1,81 @@
-# Python
+# =========================================================================
+# AROS PACS - Comprehensive .gitignore
+# =========================================================================
+
+# -------------------------------------------------------------------------
+# Node.js & Frontends (React / Vite)
+# -------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+build/
+*.local
+.npm/
+.pnpm-store/
+
+# -------------------------------------------------------------------------
+# Python & Django (Backends)
+# -------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
 venv/
 venv*/
-radiograph-xpress-venv/
 test_venv/
-
-# Django
-*.log
-local_settings.py
+radiograph-xpress-venv/
+.eggs/
+*.egg-info/
+*.egg
 db.sqlite3
 db.sqlite3-journal
+*.log
+local_settings.py
 
-# Environment variables
+# -------------------------------------------------------------------------
+# Environment Variables
+# -------------------------------------------------------------------------
 .env
+.env.*
+!.env.example
 
-# MacOS
+# -------------------------------------------------------------------------
+# Terraform
+# -------------------------------------------------------------------------
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# -------------------------------------------------------------------------
+# Graphify & Agents
+# -------------------------------------------------------------------------
+.agent/
+graphify-out/
+.gemini/
+
+# -------------------------------------------------------------------------
+# OS & Editor
+# -------------------------------------------------------------------------
 .DS_Store
+*.swp
+.idea/
+.vscode/
 
-# Private Documentation
+# -------------------------------------------------------------------------
+# Private Documentation / Thesis
+# -------------------------------------------------------------------------
 Raditech_API_Documentation/
 Business_Material/
-
-# Thesis Material
 thesis_material/

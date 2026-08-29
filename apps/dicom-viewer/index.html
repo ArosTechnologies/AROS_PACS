@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="theme-color" content="#1f0f0b" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="OHIF Viewer">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="@ohif/viewer">
+  <meta name="msapplication-TileColor" content="#1f0f0b">
+  
+  <!-- Local Polyfill -->
+  <script src="/polyfill.min.js"></script>
+  <script type="text/javascript">
+    window.PUBLIC_URL = '/';
+  </script>
+  <script type="text/javascript" src="/app-config.js"></script>
+  <script type="module" src="/init-service-worker.js"></script>
+
+  <title>AROS PACS Viewer</title>
+
+  <!-- WEB FONTS & ICONS (AROS PACS Design System - Propuesta) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <!-- TAILWIND INJECTION -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class", /* Removing dark class from html below will activate light mode */
+        theme: {
+            extend: {
+                "colors": {
+                    "surface-dim": "#ffffff",
+                    "surface-container-low": "#f8f9fa",
+                    "primary": "#ff4500",
+                    "error": "#ffb4ab",
+                    "surface": "#ffffff",
+                    "on-surface": "#111111",
+                    "surface-variant": "#e9ecef",
+                    "primary-container": "#ff4500",
+                    "background": "#ffffff",
+                    "surface-container": "#f8f9fa",
+                    "on-surface-variant": "#555555",
+                    "surface-container-high": "#e9ecef",
+                    "outline": "#e9ecef",
+                    "surface-container-highest": "#f8f9fa",
+                    "on-background": "#111111",
+                    "outline-variant": "#e9ecef"
+                },
+                "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Outfit"],
+                    "data-mono": ["JetBrains Mono"],
+                    "label-caps": ["Inter"],
+                    "body-md": ["Inter"]
+                }
+            }
+        }
+    }
+  </script>
+
+  <link href="/10.81258732728ed501c1ae.css" rel="stylesheet"><link href="/app.81258732728ed501c1ae.css" rel="stylesheet">
+  
+  <style>
+    /* ----------------------------------------------------
+       AROS PACS CUSTOM BRANDING OVERRIDES (DOM Injection)
+       Mapping OHIF Variables to the Tailwind Config Colors
+       ---------------------------------------------------- */
+    :root {
+      /* Palette */
+      --active-color: #ff4500 !important; /* primary-container */
+      --hover-color: #e63e00 !important;
+      --primary-main: #ff4500 !important;
+      --ui-sky-blue: #ff4500 !important;
+      --ui-yellow: #ff4500 !important;
+      --default-color: #555555 !important;
+      
+      /* Backgrounds */
+      --primary-background-color: #ffffff !important; /* surface-dim */
+      --box-background-color: #f8f9fa !important; /* surface-container-low */
+      --ui-gray-light: #e9ecef !important;
+      --ui-gray: #f8f9fa !important;
+      --ui-gray-dark: #ffffff !important;
+      --ui-gray-darker: #f8f9fa !important;
+      --ui-gray-darkest: #ffffff !important;
+      
+      /* Texts */
+      --text-color-active: #ffffff !important;
+      --text-primary-color: #111111 !important; /* primary text */
+      --text-secondary-color: #555555 !important; /* on-surface-variant */
+      --text-disabled-color: #aaaaaa !important;
+      
+      /* Borders */
+      --ui-border-color: #e9ecef !important; /* outline-variant */
+      --ui-border-color-dark: #e9ecef !important;
+      --ui-border-color-active: #ff4500 !important;
+      
+      /* Typography */
+      --font-family-sans-serif: 'Inter', sans-serif !important;
+      --font-family-base: 'Inter', sans-serif !important;
+      --font-family-headings: 'Outfit', sans-serif !important;
+    }
+
+    body {
+      background-color: var(--primary-background-color) !important;
+      color: var(--text-primary-color) !important;
+    }
+
+    /* Hard Edges */
+    * { border-radius: 0 !important; }
+
+    /* ----------------------------------------------------
+       LAYOUT HEIGHT FIXES (Eliminate Gaps)
+       ---------------------------------------------------- */
+    /* 
+       Total Screen = 100vh
+       Custom Header = 64px
+       Custom Footer = 32px
+       #root must fit between them: 100vh - 96px 
+    */
+    #root {
+      height: calc(100vh - 96px) !important;
+      overflow: hidden !important;
+    }
+    
+    /* 
+       ToolbarRow = 72px
+       FlexboxLayout (which contains side panels and ViewerMain) 
+       must take the rest of #root: (100vh - 96px) - 72px = 100vh - 168px 
+    */
+    .FlexboxLayout {
+      height: calc(100vh - 168px) !important;
+      min-height: calc(100vh - 168px) !important;
+      max-height: calc(100vh - 168px) !important;
+      display: flex !important;
+      flex-direction: row !important;
+    }
+    
+    /* Ensure the inner panels stretch to fill the 100vh-168px space */
+    .main-content, .ViewerMain, .viewport-drop-target, .viewport-element, .cornerstone-canvas, .sidepanel {
+      height: 100% !important;
+    }
+
+    /* ----------------------------------------------------
+       OHIF TOP BAR (ENTRY-HEADER) HACK
+       We position the OHIF Options button over the Gear icon,
+       and use JavaScript (at the bottom of this file) to 
+       cleanly erase the "Opciones" text and SVG so it's an 
+       invisible clickable area.
+       ---------------------------------------------------- */
+    .notification-bar, .header-left-box, .research-use {
+      display: none !important;
+    }
+    
+    .entry-header {
+      position: absolute !important;
+      top: 12px !important;
+      right: 64px !important; /* Exactly over our custom gear icon */
+      background: transparent !important;
+      border: none !important;
+      z-index: 9999 !important;
+      min-height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 40px !important;
+      height: 40px !important;
+    }
+    
+    .header-menu {
+      width: 100% !important;
+      height: 100% !important;
+      cursor: pointer !important;
+      /* No font-size: 0 here! That broke the dropdown. */
+    }
+
+    /* Force the dropdown text and icons to be dark/visible */
+    .header-menu * {
+      color: #111111 !important;
+      fill: #111111 !important;
+      stroke: #111111 !important;
+    }
+    
+    /* Hover effects for the dropdown items */
+    .header-menu a:hover,
+    .header-menu li:hover,
+    .header-menu a:hover *,
+    .header-menu li:hover * {
+      color: #ff4500 !important;
+      fill: #ff4500 !important;
+      stroke: #ff4500 !important;
+      background-color: #f8f9fa !important;
+    }
+    
+    /* Make sure the trigger area takes the full 40x40 */
+    .header-menu > div {
+      width: 100% !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    
+    /* 1. Viewer Core (Radiograph) stays pure black for maximum contrast */
+    .ViewerMain, .dialog-container {
+      background-color: #000000 !important;
+      border-color: #1a1a1a !important;
+      color: #e5e7eb !important;
+    }
+    
+    /* 2. Toolbar & Header gets a slightly gray tint */
+    .Header, .ToolbarRow {
+      background-color: #111111 !important;
+      border-color: #1a1a1a !important;
+    }
+    
+    /* 3. Side panels (Secuencia & Measurements) get a lighter gray to differentiate them */
+    .study-browser, .sidepanel, .measurementTable, .measurementTableHeader, 
+    .measurementTableFooter, .measurementItem, .tableList, .tableListHeader, 
+    .tableListItem, .scrollable-study-panel, .study-list-header, 
+    .measurementsPanel, .measurements, .measurements-container, 
+    .right-side-panel, .RightSidePanel {
+      background-color: #1a1a1a !important;
+      border-color: #2a2a2a !important;
+      color: #e5e7eb !important;
+    }
+    
+    /* Make ALL inner containers transparent to inherit the side panel gray */
+    .sidepanel div, .sidepanel section, .sidepanel ul, .sidepanel li {
+      background-color: transparent !important;
+      border-color: #2a2a2a !important;
+    }
+    
+    /* Make text inside side panels visible in dark mode */
+    .sidepanel *, .measurementTable *, .study-browser * {
+      color: #a0a0a0;
+    }
+    .sidepanel h1, .sidepanel h2, .sidepanel h3, .sidepanel .title, .sidepanel strong,
+    .measurementTable .measurementTableHeaderItem, .measurementTable .timepointLabel {
+      color: #ffffff !important;
+    }
+    
+    /* Hide the Study Date in Measurements Panel */
+    .measurementTableHeader, .measurementTableHeaderItem, .timepointLabel {
+      display: none !important;
+    }
+    
+    /* Viewport Metadata Overlays (Patient Info, Zoom, WL) */
+    .OHIFCornerstoneViewportOverlay, .OHIFCornerstoneViewportOverlay *, 
+    .overlay-element, .overlay-element *,
+    .viewport-text {
+      color: #ffffff !important;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    
+    /* Override global variables just in case */
+    :root, body, #root {
+      --text-secondary-color: #ffffff !important;
+      --active-color: #ff4500 !important;
+    }
+    
+    /* Input fields and buttons inside panels */
+    .sidepanel input, .sidepanel button:not(.saveBtn) {
+      background-color: #111111 !important;
+      border-color: #222222 !important;
+      color: #ffffff !important;
+    }
+
+    /* ----------------------------------------------------
+       TOOLBAR ROW REDESIGN (Pure CSS Flexbox)
+       ---------------------------------------------------- */
+    .ToolbarRow {
+      display: flex !important;
+      align-items: stretch !important;
+      height: 72px !important;
+      border-bottom: 1px solid #1a1a1a !important;
+    }
+    
+    /* Make pull-left and pull-right flex containers */
+    .ToolbarRow .pull-left {
+      display: flex !important;
+      align-items: stretch !important; /* Full height */
+      margin-right: auto !important; /* Pushes the middle buttons to the center */
+      padding: 0 4px !important; /* Tiny edge spacing */
+    }
+    .ToolbarRow .pull-right {
+      display: flex !important;
+      align-items: stretch !important;
+      margin-left: auto !important; /* Pushes the middle buttons to the center */
+      padding: 0 4px !important;
+    }
+    
+    /* ----------------------------------------------------
+       SIDE PANEL TABS (Secuencia & Measurements)
+       ---------------------------------------------------- */
+    /* Integrated Toolbar-like Design */
+    .ToolbarRow .pull-left .roundedButtonWrapper,
+    .ToolbarRow .pull-right .roundedButtonWrapper {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 100% !important; /* Full height */
+      min-width: 80px !important;
+      padding: 0 16px !important;
+      background-color: transparent !important;
+      border: none !important;
+      cursor: pointer !important;
+      position: relative !important;
+      flex: none !important;
+    }
+    
+    .ToolbarRow .pull-left .roundedButtonWrapper .roundedButton,
+    .ToolbarRow .pull-right .roundedButtonWrapper .roundedButton {
+      background-color: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      height: auto !important;
+      padding: 0 !important;
+      line-height: normal !important;
+    }
+    
+    /* Remove native hover/active backgrounds */
+    .ToolbarRow .pull-left .roundedButtonWrapper:hover .roundedButton,
+    .ToolbarRow .pull-right .roundedButtonWrapper:hover .roundedButton,
+    .ToolbarRow .pull-left .roundedButtonWrapper.active .roundedButton,
+    .ToolbarRow .pull-right .roundedButtonWrapper.active .roundedButton {
+      background-color: transparent !important;
+      border-color: transparent !important;
+      color: #ffffff !important;
+    }
+    
+    /* Animated vertical indicators using pseudo-elements */
+    .ToolbarRow .pull-left .roundedButtonWrapper::before,
+    .ToolbarRow .pull-right .roundedButtonWrapper::before {
+      content: '' !important;
+      position: absolute !important;
+      top: 50% !important;
+      height: 0% !important; /* Starts at 0 height */
+      width: 3px !important;
+      background-color: #ff4500 !important; /* AROS Orange */
+      transform: translateY(-50%) !important; /* Center vertically */
+      transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      border-radius: 4px !important;
+    }
+    
+    /* Position indicator on the left for Secuencia (pull-left) */
+    .ToolbarRow .pull-left .roundedButtonWrapper::before {
+      left: 0 !important;
+    }
+    /* Position indicator on the right for Measurements (pull-right) */
+    .ToolbarRow .pull-right .roundedButtonWrapper::before {
+      right: 0 !important;
+    }
+    
+    /* Expand indicator when active */
+    .ToolbarRow .pull-left .roundedButtonWrapper.active::before,
+    .ToolbarRow .pull-right .roundedButtonWrapper.active::before {
+      height: 60% !important; /* Grows to 60% of the height */
+    }
+    
+    /* Icon styling */
+    .ToolbarRow .pull-left .roundedButton svg,
+    .ToolbarRow .pull-right .roundedButton svg {
+      width: 24px !important;
+      height: 24px !important;
+      fill: #888888 !important;
+      margin-bottom: 6px !important;
+      display: block !important;
+      transition: fill 0.2s ease !important;
+    }
+    
+    /* Text styling */
+    .ToolbarRow .pull-left .bottomLabel,
+    .ToolbarRow .pull-right .bottomLabel {
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      color: #888888 !important;
+      line-height: 1.2 !important;
+      text-transform: none !important;
+      letter-spacing: normal !important;
+      margin-top: 2px !important;
+      transition: color 0.2s ease !important;
+    }
+    
+    /* Hover and Active color changes (Icon & Text become White) */
+    .ToolbarRow .pull-left .roundedButtonWrapper:hover svg,
+    .ToolbarRow .pull-right .roundedButtonWrapper:hover svg,
+    .ToolbarRow .pull-left .roundedButtonWrapper.active svg,
+    .ToolbarRow .pull-right .roundedButtonWrapper.active svg {
+      fill: #ffffff !important;
+    }
+    .ToolbarRow .pull-left .roundedButtonWrapper:hover .bottomLabel,
+    .ToolbarRow .pull-right .roundedButtonWrapper:hover .bottomLabel,
+    .ToolbarRow .pull-left .roundedButtonWrapper.active .bottomLabel,
+    .ToolbarRow .pull-right .roundedButtonWrapper.active .bottomLabel {
+      color: #ffffff !important;
+    }
+    
+    /* All toolbar buttons (Main & Dropdown) */
+    .ToolbarRow .toolbar-button,
+    .tooltip-toolbar-overlay .toolbar-button {
+      flex: 1 1 0 !important;
+      max-width: 80px !important;
+      min-width: 70px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 100% !important;
+      border: none !important;
+      background: transparent !important;
+      transition: all 0.2s ease !important;
+      padding: 0 4px !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+    }
+    
+    /* Hover and Active states for Toolbar Buttons */
+    .ToolbarRow .toolbar-button:hover,
+    .ToolbarRow .toolbar-button.active,
+    .tooltip-toolbar-overlay .toolbar-button:hover,
+    .tooltip-toolbar-overlay .toolbar-button.active {
+      background-color: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    
+    /* Center the SVG icon in the button */
+    .ToolbarRow .toolbar-button svg,
+    .tooltip-toolbar-overlay .toolbar-button svg {
+      display: block !important;
+      margin: 0 auto 6px auto !important;
+      width: 24px !important;
+      height: 24px !important;
+      fill: #888888 !important;
+      transition: fill 0.2s ease !important;
+    }
+    .ToolbarRow .toolbar-button:hover svg,
+    .ToolbarRow .toolbar-button.active svg,
+    .tooltip-toolbar-overlay .toolbar-button:hover svg,
+    .tooltip-toolbar-overlay .toolbar-button.active svg {
+      fill: #ff4500 !important;
+    }
+    
+    /* Label text for the button */
+    .ToolbarRow .toolbar-button .toolbar-button-label,
+    .tooltip-toolbar-overlay .toolbar-button .toolbar-button-label {
+      position: relative !important;
+      display: inline-block !important;
+      width: auto !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      color: #888888 !important;
+      line-height: 1.2 !important;
+      margin-top: 2px !important;
+      transition: color 0.2s ease !important;
+    }
+    
+    /* Animated underline */
+    .ToolbarRow .toolbar-button .toolbar-button-label::after,
+    .tooltip-toolbar-overlay .toolbar-button .toolbar-button-label::after {
+      content: '' !important;
+      position: absolute !important;
+      left: 0 !important;
+      bottom: -3px !important;
+      width: 100% !important;
+      height: 2px !important;
+      background-color: #ff4500 !important;
+      transform: scaleX(0) !important;
+      transition: transform 0.3s ease !important;
+    }
+    .ToolbarRow .toolbar-button:hover .toolbar-button-label::after,
+    .ToolbarRow .toolbar-button.active .toolbar-button-label::after,
+    .tooltip-toolbar-overlay .toolbar-button:hover .toolbar-button-label::after,
+    .tooltip-toolbar-overlay .toolbar-button.active .toolbar-button-label::after {
+      transform: scaleX(1) !important;
+    }
+    .ToolbarRow .toolbar-button:hover .toolbar-button-label,
+    .ToolbarRow .toolbar-button.active .toolbar-button-label,
+    .tooltip-toolbar-overlay .toolbar-button:hover .toolbar-button-label,
+    .tooltip-toolbar-overlay .toolbar-button.active .toolbar-button-label {
+      color: #ffffff !important;
+    }
+    
+    /* Hide the extra dropdown caret icon in buttons like "Más" so they align properly */
+    .ToolbarRow .toolbar-button .toolbar-button-label svg,
+    .ToolbarRow .toolbar-button .expand-caret {
+      display: none !important;
+    }
+    
+    /* ----------------------------------------------------
+       "MÁS" Expandable Menu Styling
+       ---------------------------------------------------- */
+    .tooltip-toolbar-overlay {
+      position: fixed !important;
+      top: 136px !important; /* Just under the 64px header + 72px toolbar */
+      /* Base state: span full width if side panels are closed */
+      left: 0 !important;
+      right: 0 !important;
+      width: auto !important; 
+      margin: 0 !important;
+      background-color: #111111 !important; /* Match toolbar dark background */
+      border: none !important;
+      border-bottom: 1px solid #1a1a1a !important; /* Subtle separator from radiograph */
+      border-radius: 0 !important;
+      transform: none !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+      z-index: 999 !important; /* Be over the radiograph, but under modals */
+    }
+    
+    /* Dynamically adjust width/position to NOT overlap open side panels */
+    body:has(.sidepanel.from-left.is-open) .tooltip-toolbar-overlay {
+      left: var(--left-sidepanel-menu-width, 307px) !important;
+    }
+    body:has(.sidepanel.from-right.is-open) .tooltip-toolbar-overlay {
+      right: var(--right-sidepanel-menu-width, 323px) !important;
+    }
+    
+    /* Dynamically push the radiograph down so the menu doesn't cover it */
+    body:has(.tooltip-toolbar-overlay) .main-content {
+      margin-top: 72px !important; /* Height of the dropdown menu */
+      height: calc(100% - 72px) !important;
+      transition: margin-top 0.2s ease, height 0.2s ease !important;
+    }
+    
+    .tooltip-toolbar-overlay .tooltip-arrow {
+      display: none !important; /* Hide the native popup triangle */
+    }
+    
+    .tooltip-toolbar-overlay .tooltip-inner {
+      background: transparent !important;
+      max-width: 100vw !important;
+      width: 100% !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: center !important; /* Center the tools in the middle */
+      height: 72px !important; /* Same height as the main toolbar */
+      padding: 0 16px !important;
+      margin: 0 !important;
+    }
+
+
+    /* Medical canvas & removing the orange active border */
+    .viewport-element, .cornerstone-canvas, 
+    .viewport-drop-target, .viewport-drop-target.active, .active-viewport,
+    .viewport-container, .viewport-container.active, .viewport-wrapper {
+      background-color: #000000 !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    
+    /* ----------------------------------------------------
+       Measurements Section Redesign
+       ---------------------------------------------------- */
+    /* 1. Measurement Item (Card Style) */
+    .measurementItem {
+      background-color: #222222 !important;
+      border-radius: 0 !important;
+      margin: 8px !important;
+      padding: 12px !important;
+      border: 1px solid #333333 !important;
+      width: calc(100% - 16px) !important;
+      box-sizing: border-box !important;
+      transition: all 0.2s ease !important;
+    }
+    
+    .measurementItem:hover, .measurementItem.selected {
+      background-color: #2a2a2a !important;
+      border-color: #ff4500 !important;
+    }
+    
+    /* 2. Options (Re-etiquetar, Descripción, Borrar) */
+    .rowActions {
+      display: flex !important;
+      flex-direction: row !important;
+      width: 100% !important;
+      margin-left: 0 !important;
+      padding-left: 0 !important;
+      background-color: transparent !important;
+      margin-top: 12px !important;
+      border-top: 1px solid #333333 !important;
+      padding-top: 12px !important;
+    }
+    
+    .rowActions .btnAction {
+      flex: 1 1 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background-color: #1a1a1a !important;
+      border-radius: 0 !important;
+      margin: 0 4px !important;
+      padding: 8px 4px !important;
+      height: auto !important;
+      line-height: 1.2 !important;
+      font-size: 10px !important;
+      font-weight: 500 !important;
+      color: #a0a0a0 !important;
+      border: 1px solid #2a2a2a !important;
+      transition: all 0.2s ease !important;
+    }
+    
+    .rowActions .btnAction:first-child { margin-left: 0 !important; }
+    .rowActions .btnAction:last-child { margin-right: 0 !important; }
+    
+    .rowActions .btnAction:hover {
+      background-color: #333333 !important;
+      color: #ffffff !important;
+      border-color: #444444 !important;
+    }
+    
+    /* 3. Dynamic Icons via Material Symbols */
+    .rowActions .btnAction svg {
+      display: none !important; /* Hide native duplicate OHIF edit icons */
+    }
+    
+    .rowActions .btnAction::before {
+      font-family: 'Material Symbols Outlined' !important;
+      font-size: 20px !important;
+      margin-bottom: 6px !important;
+      font-weight: normal !important;
+      font-style: normal !important;
+      display: inline-block !important;
+      line-height: 1 !important;
+      text-transform: none !important;
+      -webkit-font-smoothing: antialiased !important;
+    }
+    
+    .rowActions .btnAction:nth-child(1)::before { content: 'label' !important; } /* Re-etiquetar */
+    .rowActions .btnAction:nth-child(2)::before { content: 'description' !important; } /* Descripción */
+    .rowActions .btnAction:nth-child(3)::before { content: 'delete' !important; } /* Borrar */
+    
+    .rowActions .btnAction:nth-child(3):hover {
+      background-color: rgba(255, 69, 0, 0.1) !important;
+      color: #ff4500 !important;
+      border-color: rgba(255, 69, 0, 0.3) !important;
+    }
+    .rowActions .btnAction:nth-child(3):hover::before { color: #ff4500 !important; }
+    
+    /* 4. Save Measurements Button */
+    .measurementTable .measurementTableFooter .saveBtn {
+      background-color: #ff4500 !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 12px 24px !important;
+      font-weight: 600 !important;
+      font-size: 14px !important;
+      text-transform: none !important;
+      width: calc(100% - 32px) !important;
+      margin: 16px auto !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      box-shadow: 0 4px 14px rgba(255, 69, 0, 0.4) !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .measurementTable .measurementTableFooter .saveBtn:hover {
+      background-color: #e63e00 !important;
+      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.6) !important;
+      transform: translateY(-2px) !important;
+    }
+    
+    .measurementTable .measurementTableFooter .saveBtn svg {
+      fill: #ffffff !important;
+      stroke: #ffffff !important;
+      color: #ffffff !important;
+      margin-right: 8px !important;
+      width: 18px !important;
+      height: 18px !important;
+    }
+  </style>
+</head>
+
+<body class="bg-[#000000] text-gray-200 font-body-lg h-screen w-screen overflow-hidden flex flex-col">
+  
+  <!-- Custom Header -->
+  <div id="aros-custom-header" class="w-full h-16 px-4 bg-[#0a0a0a] flex items-center justify-between border-b border-[#1a1a1a] z-50 shrink-0">
+    <div class="flex items-center gap-4">
+      <div class="text-white font-display-sm font-bold tracking-tight">AROS PACS</div>
+      <nav class="flex gap-4 ml-6">
+        <a href="#" class="text-white font-medium border-b-2 border-[#ff4500] pb-1">Viewer</a>
+        <a href="#" class="text-gray-400 hover:text-white transition-colors font-medium">Dashboard</a>
+        <a href="#" class="text-gray-400 hover:text-white transition-colors font-medium">Archive</a>
+      </nav>
+    </div>
+    
+    <div class="flex items-center">
+      <div class="text-gray-500 text-sm font-mono tracking-widest uppercase">OHIF Integrated Viewer</div>
+    </div>
+
+    <div class="flex items-center gap-4" id="aros-settings-target">
+      <button class="bg-[#ff4500] hover:bg-[#cc3700] text-white font-medium px-4 py-2 transition-colors shadow-sm">
+        Export Study
+      </button>
+      <div class="flex items-center gap-2 text-gray-400 relative">
+        <button id="aros-settings-btn" class="p-2 hover:text-white transition-colors rounded-full"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span></button>
+        <button class="p-2 hover:text-white transition-colors rounded-full"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="root"></div>
+  
+  <!-- AROS PACS Footer -->
+  <footer id="aros-custom-footer" class="w-full h-8 px-4 bg-[#0a0a0a] border-t border-[#1a1a1a] flex items-center justify-between shrink-0 z-50 text-[11px] text-[#666666] font-mono tracking-wide">
+    <div class="flex items-center gap-2">
+      <span class="text-[#888888] font-bold">AROS PACS</span>
+      <span>&copy; 2026. All rights reserved.</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="uppercase">Incluye componentes de OHIF Viewer (Licencia MIT)</span>
+      <span class="w-[4px] h-[4px] rounded-full bg-[#ff4500]"></span>
+      <span class="font-bold text-[#888888]">v3.0.0</span>
+    </div>
+  </footer>
+  
+  <script type="text/javascript" src="/vendors~app.bundle.d73abe98496fdeef0859.js"></script>
+  <script type="text/javascript" src="/app.bundle.b8d5aa65c196fbcbccf5.js"></script>
+
+  <!-- AROS PACS: Safe JS Cleaner for the OHIF Options Overlay -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      setInterval(() => {
+        const headerMenu = document.querySelector('.header-menu');
+        if (headerMenu && !headerMenu.dataset.cleaned) {
+          // Hide direct SVGs (the arrow) but not dropdown SVGs
+          const svgs = headerMenu.querySelectorAll('svg');
+          svgs.forEach(svg => {
+            if (!svg.closest('ul') && !svg.closest('.dropdown-menu') && !svg.closest('[role="menu"]')) {
+              svg.style.display = 'none';
+              headerMenu.dataset.cleaned = "true";
+            }
+          });
+          
+          // Clear "Opciones" or "Options" text cleanly from the text node itself
+          const walker = document.createTreeWalker(headerMenu, NodeFilter.SHOW_TEXT, null, false);
+          let node;
+          while ((node = walker.nextNode())) {
+            const text = node.nodeValue.trim();
+            if (text === 'Options' || text === 'Opciones' || text === 'Options ') {
+              node.nodeValue = '';
+              headerMenu.dataset.cleaned = "true";
+            }
+          }
+        }
+      }, 500);
+    });
+  </script>
+</body>
+</html>

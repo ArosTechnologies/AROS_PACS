@@ -1,0 +1,9 @@
+{
+  "name": "core-api",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step for Django'",
+    "lint": "echo 'No JS lint step for Django'",
+    "dev": "python manage.py runserver"
+  }
+}
