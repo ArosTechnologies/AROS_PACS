@@ -18,5 +18,8 @@ echo "PostgreSQL is ready."
 echo "Running migrations..."
 python manage.py migrate --noinput
 
+echo "Loading demo data..."
+python manage.py load_demo_data
+
 echo "Starting Daphne (ASGI)..."
 exec daphne -b 0.0.0.0 -p 8000 arosPacs.asgi:application
