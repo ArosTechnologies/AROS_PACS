@@ -9,6 +9,7 @@ on:
       - 'apps/patient-portal/**'
       - 'apps/physician-portal/**'
       - 'apps/clinic-portal/**'
+      - '.github/workflows/deploy-portals.yml'
 
 permissions:
   id-token: write
