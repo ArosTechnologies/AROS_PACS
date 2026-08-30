@@ -416,21 +416,36 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
         {/* Quick Demo Access */}
         <div className="mt-6 pt-6 border-t border-slate-200 flex flex-col gap-2">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Acceso Rápido de Demostración</span>
-          <button
-            type="button"
-            onClick={() => {
-              setEmail('medico@aros.com');
-              setPassword('password123');
-              handleSubmit(undefined, 'medico@aros.com', 'password123');
-            }}
-            className="w-full text-left p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer"
-          >
-            <div>
-              <span className="font-bold text-xs text-slate-900 block">Dr. Carlos Mendoza (Médico Asociado)</span>
-              <span className="text-[11px] text-slate-500 font-mono">medico@aros.com / password123</span>
-            </div>
-            <span className="material-symbols-outlined text-sm text-slate-400">arrow_forward</span>
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('doctor1@demo.com');
+                setPassword('password123');
+                handleSubmit(undefined, 'doctor1@demo.com', 'password123');
+              }}
+              className="w-full text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer"
+            >
+              <div>
+                <span className="font-bold text-xs text-slate-900 block">Dr. Roberto Gómez</span>
+                <span className="text-[10px] text-slate-500 font-mono">doctor1@demo.com</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('doctor2@demo.com');
+                setPassword('password123');
+                handleSubmit(undefined, 'doctor2@demo.com', 'password123');
+              }}
+              className="w-full text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer"
+            >
+              <div>
+                <span className="font-bold text-xs text-slate-900 block">Dra. Ana Martínez</span>
+                <span className="text-[10px] text-slate-500 font-mono">doctor2@demo.com</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 

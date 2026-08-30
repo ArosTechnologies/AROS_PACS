@@ -1,0 +1,63 @@
+name: Deploy Portals (React SPAs)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'apps/patient-portal/**'
+      - 'apps/physician-portal/**'
+      - 'apps/clinic-portal/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - app: "patient-portal"
+            bucket: "aros-pacs-dev-patient-portal"
+            api_url: "http://aros-core-alb-2118564600.us-east-1.elb.amazonaws.com/api/v1"
+          - app: "physician-portal"
+            bucket: "aros-pacs-dev-physician-portal"
+            api_url: "http://aros-core-alb-2118564600.us-east-1.elb.amazonaws.com/api/v1"
+          - app: "clinic-portal"
+            bucket: "aros-pacs-dev-clinic-portal"
+            api_url: "http://internal-aros-clinic-alb-394827476.us-east-1.elb.amazonaws.com/api/v1"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Application
+        env:
+          VITE_API_URL: ${{ matrix.api_url }}
+        run: pnpm --filter ${{ matrix.app }} build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::341169624790:role/github-actions-deploy-role
+          aws-region: us-east-1
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync apps/${{ matrix.app }}/dist s3://${{ matrix.bucket }} --delete
