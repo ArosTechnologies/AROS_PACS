@@ -22,13 +22,13 @@ jobs:
         include:
           - app: "patient-portal"
             bucket: "aros-pacs-dev-patient-portal"
-            api_url: "http://aros-core-alb-2118564600.us-east-1.elb.amazonaws.com/api/v1"
+            api_url: "https://d4xwy4ufdjmdq.cloudfront.net/api/v1"
           - app: "physician-portal"
             bucket: "aros-pacs-dev-physician-portal"
-            api_url: "http://aros-core-alb-2118564600.us-east-1.elb.amazonaws.com/api/v1"
+            api_url: "https://d4xwy4ufdjmdq.cloudfront.net/api/v1"
           - app: "clinic-portal"
             bucket: "aros-pacs-dev-clinic-portal"
-            api_url: "http://aros-core-alb-2118564600.us-east-1.elb.amazonaws.com/api/v1"
+            api_url: "https://d4xwy4ufdjmdq.cloudfront.net/api/v1"
 
     steps:
       - name: Checkout Code
