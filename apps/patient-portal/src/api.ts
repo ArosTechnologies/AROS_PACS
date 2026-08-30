@@ -68,7 +68,7 @@ api.interceptors.response.use(
       try {
         // Attempt to get a new access token using the HttpOnly refresh token cookie
         const refreshResponse = await axios.post(
-           'http://localhost:8000/api/v1/auth/refresh/',
+           `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/auth/refresh/`,
            {}, // Body can be empty, cookie is sent automatically
            { 
              withCredentials: true,

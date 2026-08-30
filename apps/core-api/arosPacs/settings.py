@@ -277,6 +277,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
     "http://localhost:5175",
     "http://localhost:5176",
+    "https://dr0u08p3xny68.cloudfront.net",
+    "https://dzy72xdsrt14n.cloudfront.net",
+    "https://daer97xj2sswz.cloudfront.net",
 ]
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-portal-type',

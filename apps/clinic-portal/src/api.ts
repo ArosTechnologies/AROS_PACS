@@ -69,7 +69,7 @@ api.interceptors.response.use(
       try {
         // Attempt to get a new access clinic_token using the HttpOnly refresh clinic_token cookie
         const refreshResponse = await axios.post(
-          'http://localhost:8000/api/v1/auth/refresh/',
+          `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/auth/refresh/`,
           {}, // Body can be empty, cookie is sent automatically
           { 
             withCredentials: true,
