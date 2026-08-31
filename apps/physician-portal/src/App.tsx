@@ -261,6 +261,47 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
         }
       }
     } catch (err: any) {
+      if (err.response?.status === 405) {
+        // Render AWS WAF Captcha manually
+        setLoading(false);
+        const container = document.getElementById("aws-waf-captcha-container");
+        // @ts-ignore
+        if (container && window.AwsWafCaptcha) {
+          // @ts-ignore
+          window.AwsWafCaptcha.renderCaptcha(container, {
+            apiKey: "",
+            onSuccess: async (wafToken: string) => {
+              setLoading(true);
+              try {
+                await api.post('/auth/register/physician/', { 
+                  email: em.trim(), 
+                  password: pw,
+                  first_name: firstName,
+                  last_name: lastName,
+                  cedula_profesional: cedula,
+                  specialty: specialty || 'Médico General'
+                }, { 
+                  withCredentials: false,
+                  headers: { 'x-aws-waf-token': wafToken }
+                });
+                setSuccessMsg('Registro exitoso. Revisa tu correo electrónico para verificar tu cuenta y comenzar el proceso de validación.');
+                setIsRegistering(false);
+                container.innerHTML = '';
+              } catch (retryErr: any) {
+                setError(retryErr.response?.data?.error || 'Error al crear la cuenta después del CAPTCHA.');
+              } finally {
+                setLoading(false);
+              }
+            },
+            onError: (captchaErr: any) => {
+              setError('Error al cargar el CAPTCHA.');
+              console.error(captchaErr);
+            }
+          });
+          return;
+        }
+      }
+      
       if (isRegistering) {
         setError(err.response?.data?.error || 'Error al registrar la cuenta. Inténtalo de nuevo.');
       } else {
@@ -380,6 +421,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           {isRegistering && (
             <div className="mt-2 text-xs text-slate-500 text-center flex flex-col gap-2">
               <span>Al solicitar acceso, aceptas nuestros Términos de Servicio. Tu cuenta será revisada manualmente por nuestro equipo usando tu Cédula Profesional.</span>
+              <div id="aws-waf-captcha-container" className="flex items-center justify-center min-h-[50px] w-full rounded"></div>
             </div>
           )}
 

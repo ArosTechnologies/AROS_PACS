@@ -200,6 +200,45 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
         }
       }
     } catch (err: any) {
+      if (err.response?.status === 405) {
+        // Render AWS WAF Captcha manually
+        setLoading(false);
+        const container = document.getElementById("aws-waf-captcha-container");
+        // @ts-ignore - AwsWafCaptcha is provided by the AWS SDK in index.html
+        if (container && window.AwsWafCaptcha) {
+          // @ts-ignore
+          window.AwsWafCaptcha.renderCaptcha(container, {
+            apiKey: "",
+            onSuccess: async (wafToken: string) => {
+              setLoading(true);
+              try {
+                await api.post('/auth/register/patient/', { 
+                  email: em.trim(), 
+                  password: pw,
+                  first_name: firstName,
+                  last_name: lastName
+                }, { 
+                  withCredentials: false,
+                  headers: { 'x-aws-waf-token': wafToken }
+                });
+                setSuccessMsg('Registro exitoso. Revisa tu correo electrónico para verificar tu cuenta.');
+                setIsRegistering(false);
+                container.innerHTML = '';
+              } catch (retryErr: any) {
+                setError(retryErr.response?.data?.error || 'Error al crear la cuenta después del CAPTCHA.');
+              } finally {
+                setLoading(false);
+              }
+            },
+            onError: (captchaErr: any) => {
+              setError('Error al cargar el CAPTCHA.');
+              console.error(captchaErr);
+            }
+          });
+          return;
+        }
+      }
+      
       if (isRegistering) {
         setError(err.response?.data?.error || 'Error al registrar la cuenta. Inténtalo de nuevo.');
       } else {
@@ -296,6 +335,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           {isRegistering && (
             <div className="mt-2 text-xs text-slate-500 text-center flex flex-col gap-2">
               <span>Al crear una cuenta, aceptas nuestros Términos de Servicio y Política de Privacidad.</span>
+              <div id="aws-waf-captcha-container" className="flex items-center justify-center min-h-[50px] w-full rounded"></div>
             </div>
           )}
 
