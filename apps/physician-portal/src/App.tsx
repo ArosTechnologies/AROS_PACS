@@ -240,8 +240,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
     
     try {
       if (isRegistering) {
-        // AWS WAF Captcha Placeholder (UI only)
-        // const wafToken = await window.AwsWafIntegration.getToken();
+        // AWS WAF Captcha is handled automatically via challenge.js interceptor
         
         await api.post('/auth/register/physician/', { 
           email: em.trim(), 
@@ -250,7 +249,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           last_name: lastName,
           cedula_profesional: cedula,
           specialty: specialty || 'Médico General'
-        });
+        }, { withCredentials: false });
         setSuccessMsg('Registro exitoso. Revisa tu correo electrónico para verificar tu cuenta y comenzar el proceso de validación.');
         setIsRegistering(false);
       } else {

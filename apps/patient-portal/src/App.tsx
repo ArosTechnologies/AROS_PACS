@@ -188,7 +188,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           password: pw,
           first_name: firstName,
           last_name: lastName
-        });
+        }, { withCredentials: false });
         setSuccessMsg('Registro exitoso. Revisa tu correo electrónico para verificar tu cuenta.');
         setIsRegistering(false);
       } else {
