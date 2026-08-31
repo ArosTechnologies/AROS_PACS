@@ -231,14 +231,11 @@ else:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# Email Configuration (Gmail SMTP)
-EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = env.int('EMAIL_PORT', default=587)
-EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='AROS PACS <arosPacs@gmail.com>')
+# Email Configuration (Amazon SES)
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django_ses.SESBackend')
+AWS_SES_REGION_NAME = env('AWS_SES_REGION_NAME', default='us-east-1')
+AWS_SES_REGION_ENDPOINT = env('AWS_SES_REGION_ENDPOINT', default='email.us-east-1.amazonaws.com')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='AROS PACS <ivivas@arostech.com.mx>')
 AUTH_USER_MODEL = 'identity.User'
 
 from datetime import timedelta
@@ -278,8 +275,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5175",
     "http://localhost:5176",
     "https://dr0u08p3xny68.cloudfront.net",
+    "http://dr0u08p3xny68.cloudfront.net",
     "https://dzy72xdsrt14n.cloudfront.net",
+    "http://dzy72xdsrt14n.cloudfront.net",
     "https://daer97xj2sswz.cloudfront.net",
+    "http://daer97xj2sswz.cloudfront.net",
 ]
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-portal-type',

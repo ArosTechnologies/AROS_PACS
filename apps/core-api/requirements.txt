@@ -63,3 +63,4 @@ argon2-cffi==23.1.0
 drf-spectacular==0.28.0
 pybreaker==1.2.0
 httpx==0.27.0
+django-ses==4.0.1

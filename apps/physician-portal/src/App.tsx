@@ -381,9 +381,6 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           {isRegistering && (
             <div className="mt-2 text-xs text-slate-500 text-center flex flex-col gap-2">
               <span>Al solicitar acceso, aceptas nuestros Términos de Servicio. Tu cuenta será revisada manualmente por nuestro equipo usando tu Cédula Profesional.</span>
-              <div id="aws-waf-captcha-container" className="h-10 bg-slate-100 flex items-center justify-center border border-slate-200 rounded">
-                [AWS WAF Captcha Challenge Placeholder]
-              </div>
             </div>
           )}
 

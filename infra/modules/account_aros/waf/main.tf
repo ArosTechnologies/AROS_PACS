@@ -60,6 +60,35 @@ resource "aws_wafv2_web_acl" "core_waf" {
     }
   }
 
+  rule {
+    name     = "RequireCaptchaForRegistration"
+    priority = 3
+
+    action {
+      captcha {}
+    }
+
+    statement {
+      byte_match_statement {
+        field_to_match {
+          uri_path {}
+        }
+        positional_constraint = "STARTS_WITH"
+        search_string         = "/api/v1/auth/register"
+        text_transformation {
+          priority = 0
+          type     = "NONE"
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "RequireCaptchaForRegistrationMetric"
+      sampled_requests_enabled   = true
+    }
+  }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "arosCoreWafMetric"

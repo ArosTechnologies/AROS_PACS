@@ -181,8 +181,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
     
     try {
       if (isRegistering) {
-        // AWS WAF Captcha Placeholder (UI only)
-        // const wafToken = await window.AwsWafIntegration.getToken();
+        // AWS WAF Captcha is handled automatically via challenge.js interceptor
         
         await api.post('/auth/register/patient/', { 
           email: em.trim(), 
@@ -297,9 +296,6 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           {isRegistering && (
             <div className="mt-2 text-xs text-slate-500 text-center flex flex-col gap-2">
               <span>Al crear una cuenta, aceptas nuestros Términos de Servicio y Política de Privacidad.</span>
-              <div id="aws-waf-captcha-container" className="h-10 bg-slate-100 flex items-center justify-center border border-slate-200 rounded">
-                [AWS WAF Captcha Challenge Placeholder]
-              </div>
             </div>
           )}
 
