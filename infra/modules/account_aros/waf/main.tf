@@ -69,15 +69,32 @@ resource "aws_wafv2_web_acl" "core_waf" {
     }
 
     statement {
-      byte_match_statement {
-        field_to_match {
-          uri_path {}
+      and_statement {
+        statement {
+          byte_match_statement {
+            field_to_match {
+              uri_path {}
+            }
+            positional_constraint = "STARTS_WITH"
+            search_string         = "/api/v1/auth/register"
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
         }
-        positional_constraint = "STARTS_WITH"
-        search_string         = "/api/v1/auth/register"
-        text_transformation {
-          priority = 0
-          type     = "NONE"
+        statement {
+          byte_match_statement {
+            field_to_match {
+              method {}
+            }
+            positional_constraint = "EXACTLY"
+            search_string         = "POST"
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
         }
       }
     }
