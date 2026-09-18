@@ -247,6 +247,7 @@ class Appointment(models.Model):
     
     requested_date = models.DateTimeField()
     proposed_date = models.DateTimeField(null=True, blank=True)
+    proposed_by = models.CharField(max_length=10, choices=[('CLINIC', 'Clinic'), ('PATIENT', 'Patient')], null=True, blank=True, help_text="Indicates who made the last proposal")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     notes = models.TextField(blank=True, default='')
     clinic_notes = models.TextField(blank=True, default='', help_text="Razón de rechazo o propuesta por la clínica")

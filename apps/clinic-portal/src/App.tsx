@@ -1228,6 +1228,17 @@ function AssistantView({ activeTab, clinicConfig }: { activeTab: string, clinicC
            d.getDate() === today.getDate();
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'Pendiente';
+      case 'ACCEPTED': return 'Aceptada';
+      case 'REJECTED': return 'Rechazada';
+      case 'PROPOSED': return 'Reprogramada';
+      case 'CANCELLED': return 'Cancelada';
+      default: return status;
+    }
+  };
+
   const processedToday = studies.filter((s: any) => isTodayLocal(s.study_date)).length;
   
   const todaysAgenda = studyRequests.filter((r: any) => isTodayLocal(r.requested_date) || isTodayLocal(r.proposed_date));
@@ -1268,7 +1279,7 @@ function AssistantView({ activeTab, clinicConfig }: { activeTab: string, clinicC
                     <p className="font-bold text-slate-900">{req.patient_name || 'Paciente'}</p>
                     <p className="text-xs text-slate-500">{req.modality} - {req.requested_date ? new Date(req.requested_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Sin hora'}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-slate-50 text-slate-700 border border-slate-200 uppercase tracking-wider">{req.status}</span>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-slate-50 text-slate-700 border border-slate-200 uppercase tracking-wider">{getStatusLabel(req.status)}</span>
                 </li>
               ))
             )}

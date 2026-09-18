@@ -11,6 +11,27 @@ def appointment_updated(sender, instance, created, **kwargs):
     if not channel_layer:
         return
         
+    # Safely get patient profile
+    patient_profile = None
+    if instance.patient:
+        try:
+            patient_profile = instance.patient.patient_profile
+        except Exception:
+            pass
+
+    patient_name = ""
+    if patient_profile:
+        patient_name = f"{patient_profile.first_name} {patient_profile.last_name}".strip()
+    if not patient_name and instance.patient:
+        patient_name = instance.patient.email_hash
+
+    def format_date(d):
+        if not d:
+            return None
+        if hasattr(d, 'isoformat'):
+            return d.isoformat()
+        return str(d)
+
     # Serialize appointment data
     appointment_data = {
         "id": str(instance.id),
@@ -18,13 +39,14 @@ def appointment_updated(sender, instance, created, **kwargs):
         "patient": str(instance.patient.id) if instance.patient else None,
         "physician": str(instance.physician.id) if getattr(instance, 'physician', None) else None,
         "clinic_slug": instance.clinic.slug if getattr(instance, 'clinic', None) else None,
-        "requested_date": instance.requested_date.isoformat() if getattr(instance, 'requested_date', None) else None,
-        "proposed_date": instance.proposed_date.isoformat() if getattr(instance, 'proposed_date', None) else None,
+        "requested_date": format_date(getattr(instance, 'requested_date', None)),
+        "proposed_date": format_date(getattr(instance, 'proposed_date', None)),
+        "proposed_by": getattr(instance, 'proposed_by', None),
         "modality": instance.modality,
         # Fields expected by the frontend table:
-        "patient_name": f"{getattr(instance.patient, 'patient_profile', None).first_name if getattr(instance.patient, 'patient_profile', None) else ''} {getattr(instance.patient, 'patient_profile', None).last_name if getattr(instance.patient, 'patient_profile', None) else ''}".strip() or instance.patient.email_hash,
-        "patient_email": instance.patient.email_hash,
-        "patient_phone": getattr(instance.patient, 'patient_profile', None).phone if getattr(instance.patient, 'patient_profile', None) else "",
+        "patient_name": patient_name,
+        "patient_email": instance.patient.email_hash if instance.patient else "",
+        "patient_phone": patient_profile.phone if patient_profile else "",
         "created_by": instance.created_by.email_hash if getattr(instance, 'created_by', None) else "",
         "notes": instance.notes,
         "clinic_notes": instance.clinic_notes

@@ -1321,7 +1321,7 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
                 <div className="w-full bg-white text-slate-900 overflow-hidden">
                   <div className="px-4 py-3 bg-slate-100 border-b border-slate-200 text-slate-900 flex items-center justify-between gap-3">
                     <h3 className="font-extrabold text-sm tracking-wide m-0 leading-tight flex-1">{clinic.name}</h3>
-                    <div className="inline-flex items-center gap-1 bg-white text-amber-500 border border-slate-200 shadow-sm px-2 py-0.5 shrink-0 text-xs rounded-sm">
+                    <div className="inline-flex items-center gap-1 bg-white text-amber-500 border border-slate-200 shadow-sm px-2 py-0.5 shrink-0 text-xs rounded-none">
                       <span className="material-symbols-outlined text-[13px] leading-none text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                       <span className="font-extrabold leading-none">{clinic.rating || '5.0'}</span>
                     </div>
@@ -1434,7 +1434,7 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-200 shrink-0">
+                    <span className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-200 shrink-0 rounded-none">
                       <span className="material-symbols-outlined text-[13px] text-amber-500 leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                       <span>{clinic.rating || '5.0'}</span>
                     </span>

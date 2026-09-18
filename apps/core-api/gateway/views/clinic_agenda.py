@@ -2,6 +2,8 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from identity.models import Appointment
+from django.utils import timezone
+from datetime import timedelta
 
 class ClinicAgendaView(APIView):
     permission_classes = [IsAuthenticated]
@@ -17,7 +19,11 @@ class ClinicAgendaView(APIView):
             else:
                 clinic_slug = 'demo-clinic'
         
-        appointments = Appointment.objects.filter(clinic__slug=clinic_slug).order_by('-requested_date')
+        now = timezone.now()
+        appointments = Appointment.objects.filter(clinic__slug=clinic_slug).exclude(
+            status__in=['CANCELLED', 'REJECTED'], 
+            updated_at__lt=now - timedelta(days=1)
+        ).order_by('-requested_date')
         
         result = []
         for a in appointments:
@@ -32,6 +38,7 @@ class ClinicAgendaView(APIView):
                 "modality": a.modality,
                 "requested_date": a.requested_date.isoformat() if a.requested_date else None,
                 "proposed_date": a.proposed_date.isoformat() if a.proposed_date else None,
+                "proposed_by": a.proposed_by,
                 "status": a.status,
                 "notes": a.notes,
                 "clinic_notes": a.clinic_notes
@@ -63,7 +70,11 @@ class ClinicAgendaView(APIView):
             elif action == 'propose' and proposed_date:
                 appointment.status = 'PROPOSED'
                 appointment.proposed_date = proposed_date
+                appointment.proposed_by = 'CLINIC'
                 appointment.clinic_notes = reason
+            elif action == 'recover':
+                appointment.status = 'PENDING'
+                appointment.clinic_notes = ''
                 
             appointment.save()
             

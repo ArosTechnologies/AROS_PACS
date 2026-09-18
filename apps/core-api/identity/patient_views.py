@@ -262,7 +262,13 @@ class PatientAppointmentsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        appointments = Appointment.objects.filter(patient=request.user).order_by('-requested_date')
+        from django.utils import timezone
+        from datetime import timedelta
+        now = timezone.now()
+        appointments = Appointment.objects.filter(patient=request.user).exclude(
+            status__in=['CANCELLED', 'REJECTED'], 
+            updated_at__lt=now - timedelta(days=1)
+        ).order_by('-requested_date')
         result = []
         for a in appointments:
             result.append({
@@ -273,9 +279,11 @@ class PatientAppointmentsView(APIView):
                 "modality": a.modality,
                 "requested_date": a.requested_date.isoformat() if a.requested_date else None,
                 "proposed_date": a.proposed_date.isoformat() if a.proposed_date else None,
+                "proposed_by": a.proposed_by,
                 "status": a.status,
                 "notes": a.notes,
-                "clinic_notes": a.clinic_notes
+                "clinic_notes": a.clinic_notes,
+                "clinic_opening_hours": getattr(a.clinic, 'opening_hours', '')
             })
         return JsonResponse(result, safe=False)
 
@@ -300,6 +308,8 @@ class PatientAppointmentsView(APIView):
             notify_new_appointment(appointment)
             return JsonResponse({"status": "success", "appointment_id": appointment.id})
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return JsonResponse({"error": str(e)}, status=400)
             
     def put(self, request):
@@ -314,6 +324,17 @@ class PatientAppointmentsView(APIView):
             elif action == 'cancel':
                 appointment.status = 'CANCELLED'
                 appointment.save()
+            elif action == 'propose':
+                proposed_date = request.data.get('proposed_date')
+                if proposed_date:
+                    appointment.status = 'PROPOSED'
+                    appointment.proposed_date = proposed_date
+                    appointment.proposed_by = 'PATIENT'
+                    appointment.save()
+                    
+            from core.notifications import notify_appointment_status_changed
+            notify_appointment_status_changed(appointment)
+            
             return JsonResponse({"status": "success", "appointment_status": appointment.status})
         except Appointment.DoesNotExist:
             return JsonResponse({"error": "Appointment not found"}, status=404)

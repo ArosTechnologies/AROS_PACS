@@ -16,6 +16,15 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
   const [proposedTime, setProposedTime] = useState<string>('');
   const [actionReason, setActionReason] = useState<string>('');
 
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
   const token = localStorage.getItem('clinic_token');
   const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
 
@@ -24,12 +33,22 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'appointment_update') {
-          // Actualizar la lista de citas sin recargar
           const updatedAppt = data.data;
+          let msg = `Cita actualizada: ${updatedAppt.patient_name || 'Paciente'} (${updatedAppt.status})`;
+          if (updatedAppt.status === 'ACCEPTED') msg = `La cita de ${updatedAppt.patient_name || 'paciente'} ha sido confirmada.`;
+          else if (updatedAppt.status === 'REJECTED') msg = `La cita de ${updatedAppt.patient_name || 'paciente'} ha sido rechazada.`;
+          else if (updatedAppt.status === 'CANCELLED') msg = `El paciente ${updatedAppt.patient_name || ''} ha cancelado su cita.`;
+          else if (updatedAppt.status === 'PROPOSED') {
+            if (updatedAppt.proposed_by === 'PATIENT') msg = `El paciente ${updatedAppt.patient_name || ''} ha propuesto un nuevo horario.`;
+            else msg = `Se ha enviado la propuesta de horario a ${updatedAppt.patient_name || 'paciente'}.`;
+          } else if (updatedAppt.status === 'PENDING') msg = `Cita de ${updatedAppt.patient_name || 'paciente'} movida a pendientes.`;
+          
+          setToastMessage(msg);
+          
           setAppointments(prev => {
-            const exists = prev.find(a => a.id === updatedAppt.id);
+            const exists = prev.find(a => String(a.id) === String(updatedAppt.id));
             if (exists) {
-              return prev.map(a => a.id === updatedAppt.id ? { ...a, ...updatedAppt } : a);
+              return prev.map(a => String(a.id) === String(updatedAppt.id) ? { ...a, ...updatedAppt } : a);
             }
             return [updatedAppt, ...prev];
           });
@@ -129,7 +148,7 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
       </div>
 
       <div className="enterprise-card overflow-hidden mb-8">
-        {appointments.filter(a => a.status !== 'CANCELLED').length === 0 ? (
+        {appointments.filter(a => a.status !== 'CANCELLED' && a.status !== 'REJECTED').length === 0 ? (
           <div className="p-16 text-center flex flex-col items-center justify-center bg-white">
             <div className="w-16 h-16 bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
               <span className="material-symbols-outlined text-3xl">calendar_month</span>
@@ -151,7 +170,7 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
                 </tr>
               </thead>
               <tbody>
-                {appointments.filter(a => a.status !== 'CANCELLED').map((apt) => (
+                {appointments.filter(a => a.status !== 'CANCELLED' && a.status !== 'REJECTED').map((apt) => (
                   <tr key={apt.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                     <td className="p-4">
                       <div className="font-semibold text-slate-900">{apt.patient_name}</div>
@@ -267,12 +286,22 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-2">
-                          {apt.status === 'PENDING' && (
+                          {apt.status === 'PROPOSED' && apt.proposed_by === 'PATIENT' ? (
+                            <button onClick={() => handleAction(apt.id, 'accept')} className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-none transition-colors border border-transparent hover:border-emerald-200" title="Aceptar Propuesta"><span className="material-symbols-outlined text-lg block leading-none">check</span></button>
+                          ) : null}
+                          {(apt.status === 'PENDING' || (apt.status === 'PROPOSED' && apt.proposed_by === 'PATIENT')) && (
                             <>
-                              <button onClick={() => handleAction(apt.id, 'accept')} className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-none transition-colors border border-transparent hover:border-emerald-200" title="Aceptar"><span className="material-symbols-outlined text-lg block leading-none">check</span></button>
+                              {apt.status === 'PENDING' && (
+                                <button onClick={() => handleAction(apt.id, 'accept')} className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-none transition-colors border border-transparent hover:border-emerald-200" title="Aceptar"><span className="material-symbols-outlined text-lg block leading-none">check</span></button>
+                              )}
                               <button onClick={() => { 
                                 setProposingFor(apt.id); 
-                                let reqDate = new Date(apt.requested_date);
+                                let reqDate = new Date();
+                                if (apt.proposed_date) {
+                                  reqDate = new Date(apt.proposed_date);
+                                } else if (apt.requested_date) {
+                                  reqDate = new Date(apt.requested_date);
+                                }
                                 if (isNaN(reqDate.getTime())) reqDate = new Date();
                                 setProposedDate(reqDate);
                                 setProposedTime(`${reqDate.getHours().toString().padStart(2, '0')}:${(Math.floor(reqDate.getMinutes() / 30) * 30).toString().padStart(2, '0')}`);
@@ -280,7 +309,7 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
                               <button onClick={() => { setRejectingFor(apt.id); }} className="w-8 h-8 flex items-center justify-center text-rose-600 hover:bg-rose-50 rounded-none transition-colors border border-transparent hover:border-rose-200" title="Rechazar"><span className="material-symbols-outlined text-lg block leading-none">close</span></button>
                             </>
                           )}
-                          {apt.status === 'PROPOSED' && (
+                          {apt.status === 'PROPOSED' && apt.proposed_by !== 'PATIENT' && (
                              <span className="text-xs text-slate-400">Esperando respuesta</span>
                           )}
                         </div>
@@ -294,60 +323,86 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
         )}
       </div>
 
-      {/* Citas Canceladas */}
-      {appointments.filter(a => a.status === 'CANCELLED').length > 0 && (
-        <>
-          <div className="mb-4 mt-8">
-            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <span className="material-symbols-outlined text-rose-500">block</span>
-              Citas Canceladas
-            </h3>
-          </div>
-          <div className="enterprise-card overflow-hidden opacity-75">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-sm">
-                    <th className="p-4 font-semibold">Paciente</th>
-                    <th className="p-4 font-semibold">Solicitada Por</th>
-                    <th className="p-4 font-semibold">Fecha Requerida</th>
-                    <th className="p-4 font-semibold">Modalidad / Notas</th>
-                    <th className="p-4 font-semibold text-center">Estatus</th>
+      {/* Citas Canceladas / Rechazadas */}
+      {appointments.filter(a => a.status === 'CANCELLED' || a.status === 'REJECTED').length > 0 && (
+        <details className="mt-8 mb-4 bg-white border border-slate-200 rounded overflow-hidden">
+          <summary className="p-4 bg-slate-50 border-b border-slate-200 cursor-pointer font-semibold text-slate-700 hover:bg-slate-100 flex items-center justify-between outline-none">
+            Historial de Citas Canceladas / Rechazadas
+            <span className="text-xs font-normal text-slate-500">
+              {appointments.filter(a => a.status === 'CANCELLED' || a.status === 'REJECTED').length} registro(s)
+            </span>
+          </summary>
+          <div className="overflow-x-auto opacity-75">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr className="border-b border-slate-200 bg-white text-slate-600 text-sm">
+                  <th className="p-4 font-semibold">Paciente</th>
+                  <th className="p-4 font-semibold">Solicitada Por</th>
+                  <th className="p-4 font-semibold">Fecha Requerida</th>
+                  <th className="p-4 font-semibold">Modalidad / Notas</th>
+                  <th className="p-4 font-semibold text-center">Estatus</th>
+                  <th className="p-4 font-semibold text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appointments.filter(a => a.status === 'CANCELLED' || a.status === 'REJECTED').map((apt) => (
+                  <tr key={apt.id} className="border-b border-slate-100 last:border-0 bg-white">
+                    <td className="p-4">
+                      <div className="font-semibold text-slate-700 line-through decoration-slate-300">{apt.patient_name}</div>
+                      <div className="text-xs text-slate-500">{apt.patient_phone}</div>
+                    </td>
+                    <td className="p-4 text-sm text-slate-500">{apt.created_by}</td>
+                    <td className="p-4 text-sm text-slate-500 line-through decoration-slate-300">
+                      {apt.requested_date && !isNaN(new Date(apt.requested_date).getTime()) 
+                        ? new Date(apt.requested_date).toLocaleString() 
+                        : 'Fecha no especificada'}
+                    </td>
+                    <td className="p-4 text-slate-500">
+                      <div className="text-sm">{apt.modality || 'General'}</div>
+                      {apt.clinic_notes && (
+                        <div className="text-xs text-rose-600 mt-1 max-w-[200px] truncate" title={apt.clinic_notes}>
+                          Motivo: {apt.clinic_notes}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 border uppercase tracking-wide ${
+                        apt.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+                      }`}>
+                        {apt.status === 'REJECTED' ? 'Rechazada' : 'Cancelada'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      {apt.status === 'REJECTED' && (
+                        <button onClick={() => handleAction(apt.id, 'recover')} className="enterprise-btn-secondary py-1 px-3 text-xs bg-white hover:bg-slate-50 text-slate-600">
+                          Recuperar
+                        </button>
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {appointments.filter(a => a.status === 'CANCELLED').map((apt) => (
-                    <tr key={apt.id} className="border-b border-slate-100 last:border-0 bg-slate-50">
-                      <td className="p-4">
-                        <div className="font-semibold text-slate-700 line-through decoration-slate-300">{apt.patient_name}</div>
-                        <div className="text-xs text-slate-500">{apt.patient_phone}</div>
-                      </td>
-                      <td className="p-4 text-sm text-slate-500">{apt.created_by}</td>
-                      <td className="p-4 text-sm text-slate-500 line-through decoration-slate-300">
-                        {apt.requested_date && !isNaN(new Date(apt.requested_date).getTime()) 
-                          ? new Date(apt.requested_date).toLocaleString() 
-                          : 'Fecha no especificada'}
-                      </td>
-                      <td className="p-4 text-slate-500">
-                        <div className="text-sm">{apt.modality || 'General'}</div>
-                        {apt.clinic_notes && (
-                          <div className="text-xs text-rose-600 mt-1 max-w-[200px] truncate" title={apt.clinic_notes}>
-                            Motivo: {apt.clinic_notes}
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 border bg-slate-100 text-slate-500 border-slate-200">
-                          <span className="material-symbols-outlined text-xs">block</span> Cancelada
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </>
+        </details>
+      )}
+
+      {toastMessage && (
+        <div className="fixed top-6 right-6 w-80 bg-white border border-slate-200 shadow-xl rounded z-[9999] overflow-hidden flex flex-col animate-slide-up">
+          <div className="p-4 flex items-start gap-3">
+            <span className="material-symbols-outlined text-indigo-600">notifications_active</span>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-slate-800">Actualización</h4>
+              <p className="text-xs text-slate-600 mt-1">{toastMessage}</p>
+            </div>
+            <button onClick={() => setToastMessage(null)} className="text-slate-400 hover:text-slate-600">
+              <span className="material-symbols-outlined text-sm block">close</span>
+            </button>
+          </div>
+          <div className="h-1 bg-slate-100 w-full">
+            <div className="h-full bg-indigo-500 animate-[shrink_5s_linear_forwards]"></div>
+          </div>
+        </div>
       )}
     </div>
   );

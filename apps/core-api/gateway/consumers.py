@@ -16,9 +16,9 @@ def get_user_groups(user):
             
     try:
         if hasattr(user, 'role') and user.role:
-            if user.role.name == 'Associate Doctor':
+            if user.role.name == 'Médico Asociado':
                 groups.append(f"physician_{user.id}_agenda")
-            elif user.role.name == 'Patient':
+            elif user.role.name == 'Paciente':
                 groups.append(f"patient_{user.id}_agenda")
     except:
         pass

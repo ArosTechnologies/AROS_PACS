@@ -131,3 +131,4 @@
   margin-left: 4px;
   opacity: 0.5;
 }
+@keyframes shrink { from { width: 100%; } to { width: 0%; } }
