@@ -171,7 +171,7 @@ setup_backends() {
   echo -e "${GREEN}✓ Core API database migrated.${NC}"
 
   echo -e "${CYAN}Loading demo credentials for Core API...${NC}"
-  apps/core-api/.venv/bin/python apps/core-api/manage.py load_demo_data > "$LOGS_DIR/core-seed.log" 2>&1
+  # apps/core-api/.venv/bin/python apps/core-api/manage.py load_demo_data > "$LOGS_DIR/core-seed.log" 2>&1
   echo -e "${GREEN}✓ Demo data loaded.${NC}"
 
   echo -e "${CYAN}Applying database migrations for Clinic API...${NC}"

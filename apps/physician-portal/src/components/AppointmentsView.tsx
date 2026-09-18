@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { api } from '../api';
+import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 
 export default function AppointmentsView({ patients }: { patients: any[] }) {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -10,6 +11,31 @@ export default function AppointmentsView({ patients }: { patients: any[] }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   
+  const token = localStorage.getItem('physician_token');
+  const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
+
+  useWebSocket(socketUrl, {
+    onMessage: (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'appointment_update') {
+          const updatedAppt = data.data;
+          setAppointments(prev => {
+            const exists = prev.find(a => a.id === updatedAppt.id);
+            if (exists) {
+              return prev.map(a => a.id === updatedAppt.id ? { ...a, ...updatedAppt } : a);
+            }
+            return [updatedAppt, ...prev];
+          });
+        }
+      } catch (err) {
+        console.error("Error parsing websocket message", err);
+      }
+    },
+    shouldReconnect: () => true,
+    reconnectInterval: 3000,
+  });
+
   // New appointment form
   const [selectedPatient, setSelectedPatient] = useState('');
   const [selectedClinic, setSelectedClinic] = useState('');

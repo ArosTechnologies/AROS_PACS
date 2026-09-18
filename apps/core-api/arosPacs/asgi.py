@@ -14,7 +14,14 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'arosPacs.settings')
 django_asgi_app = get_asgi_application()
 
+from gateway.middleware import JWTAuthMiddlewareStack
+import gateway.routing
+
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    # "websocket": AuthMiddlewareStack(URLRouter([...])), # We will add this in Phase 2
+    "websocket": JWTAuthMiddlewareStack(
+        URLRouter(
+            gateway.routing.websocket_urlpatterns
+        )
+    ),
 })

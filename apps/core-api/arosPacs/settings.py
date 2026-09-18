@@ -116,6 +116,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'arosPacs.wsgi.application'
 ASGI_APPLICATION = 'arosPacs.asgi.application'
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(env('REDIS_URL', default='redis://localhost:6379/0'))],
+        },
+    },
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { api } from '../api';
+import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 
 export default function ClinicAgenda({ openingHours = '' }: { openingHours?: string }) {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -14,6 +15,32 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
   const [proposedDate, setProposedDate] = useState<Date | null>(null);
   const [proposedTime, setProposedTime] = useState<string>('');
   const [actionReason, setActionReason] = useState<string>('');
+
+  const token = localStorage.getItem('clinic_token');
+  const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
+
+  useWebSocket(socketUrl, {
+    onMessage: (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'appointment_update') {
+          // Actualizar la lista de citas sin recargar
+          const updatedAppt = data.data;
+          setAppointments(prev => {
+            const exists = prev.find(a => a.id === updatedAppt.id);
+            if (exists) {
+              return prev.map(a => a.id === updatedAppt.id ? { ...a, ...updatedAppt } : a);
+            }
+            return [updatedAppt, ...prev];
+          });
+        }
+      } catch (err) {
+        console.error("Error parsing websocket message", err);
+      }
+    },
+    shouldReconnect: (closeEvent) => true,
+    reconnectInterval: 3000,
+  });
 
   const parseWorkingHours = (scheduleStr: string) => {
     const scheduleMap: Record<number, { open: string; close: string } | null> = { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
@@ -101,14 +128,14 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
         <p className="text-slate-500 mt-1">Gestiona las solicitudes de citas de los pacientes y médicos asociados.</p>
       </div>
 
-      <div className="enterprise-card overflow-hidden">
-        {appointments.length === 0 ? (
+      <div className="enterprise-card overflow-hidden mb-8">
+        {appointments.filter(a => a.status !== 'CANCELLED').length === 0 ? (
           <div className="p-16 text-center flex flex-col items-center justify-center bg-white">
             <div className="w-16 h-16 bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
               <span className="material-symbols-outlined text-3xl">calendar_month</span>
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-1">Agenda Vacía</h3>
-            <p className="text-sm text-slate-500">No hay citas registradas.</p>
+            <p className="text-sm text-slate-500">No hay citas activas registradas.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -124,7 +151,7 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
                 </tr>
               </thead>
               <tbody>
-                {appointments.map((apt) => (
+                {appointments.filter(a => a.status !== 'CANCELLED').map((apt) => (
                   <tr key={apt.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                     <td className="p-4">
                       <div className="font-semibold text-slate-900">{apt.patient_name}</div>
@@ -132,8 +159,10 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
                     </td>
                     <td className="p-4 text-sm text-slate-700">{apt.created_by}</td>
                     <td className="p-4 text-sm text-slate-700">
-                      {new Date(apt.requested_date).toLocaleString()}
-                      {apt.proposed_date && (
+                      {apt.requested_date && !isNaN(new Date(apt.requested_date).getTime()) 
+                        ? new Date(apt.requested_date).toLocaleString() 
+                        : 'Fecha no especificada'}
+                      {apt.proposed_date && !isNaN(new Date(apt.proposed_date).getTime()) && (
                         <div className="text-xs text-amber-600 mt-1">
                           Propuesta: {new Date(apt.proposed_date).toLocaleString()}
                         </div>
@@ -243,7 +272,8 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
                               <button onClick={() => handleAction(apt.id, 'accept')} className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-none transition-colors border border-transparent hover:border-emerald-200" title="Aceptar"><span className="material-symbols-outlined text-lg block leading-none">check</span></button>
                               <button onClick={() => { 
                                 setProposingFor(apt.id); 
-                                const reqDate = new Date(apt.requested_date);
+                                let reqDate = new Date(apt.requested_date);
+                                if (isNaN(reqDate.getTime())) reqDate = new Date();
                                 setProposedDate(reqDate);
                                 setProposedTime(`${reqDate.getHours().toString().padStart(2, '0')}:${(Math.floor(reqDate.getMinutes() / 30) * 30).toString().padStart(2, '0')}`);
                               }} className="w-8 h-8 flex items-center justify-center text-amber-600 hover:bg-amber-50 rounded-none transition-colors border border-transparent hover:border-amber-200" title="Proponer Nueva Fecha"><span className="material-symbols-outlined text-lg block leading-none">schedule</span></button>
@@ -263,6 +293,62 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
           </div>
         )}
       </div>
+
+      {/* Citas Canceladas */}
+      {appointments.filter(a => a.status === 'CANCELLED').length > 0 && (
+        <>
+          <div className="mb-4 mt-8">
+            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <span className="material-symbols-outlined text-rose-500">block</span>
+              Citas Canceladas
+            </h3>
+          </div>
+          <div className="enterprise-card overflow-hidden opacity-75">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-sm">
+                    <th className="p-4 font-semibold">Paciente</th>
+                    <th className="p-4 font-semibold">Solicitada Por</th>
+                    <th className="p-4 font-semibold">Fecha Requerida</th>
+                    <th className="p-4 font-semibold">Modalidad / Notas</th>
+                    <th className="p-4 font-semibold text-center">Estatus</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.filter(a => a.status === 'CANCELLED').map((apt) => (
+                    <tr key={apt.id} className="border-b border-slate-100 last:border-0 bg-slate-50">
+                      <td className="p-4">
+                        <div className="font-semibold text-slate-700 line-through decoration-slate-300">{apt.patient_name}</div>
+                        <div className="text-xs text-slate-500">{apt.patient_phone}</div>
+                      </td>
+                      <td className="p-4 text-sm text-slate-500">{apt.created_by}</td>
+                      <td className="p-4 text-sm text-slate-500 line-through decoration-slate-300">
+                        {apt.requested_date && !isNaN(new Date(apt.requested_date).getTime()) 
+                          ? new Date(apt.requested_date).toLocaleString() 
+                          : 'Fecha no especificada'}
+                      </td>
+                      <td className="p-4 text-slate-500">
+                        <div className="text-sm">{apt.modality || 'General'}</div>
+                        {apt.clinic_notes && (
+                          <div className="text-xs text-rose-600 mt-1 max-w-[200px] truncate" title={apt.clinic_notes}>
+                            Motivo: {apt.clinic_notes}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 border bg-slate-100 text-slate-500 border-slate-200">
+                          <span className="material-symbols-outlined text-xs">block</span> Cancelada
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

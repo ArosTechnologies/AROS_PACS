@@ -16,7 +16,8 @@
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.7",
     "react-easy-crop": "^6.2.3",
-    "react-phone-number-input": "^3.4.18"
+    "react-phone-number-input": "^3.4.18",
+    "react-use-websocket": "^4.13.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
