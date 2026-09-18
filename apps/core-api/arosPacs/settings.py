@@ -46,11 +46,13 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'corsheaders',
     'drf_spectacular',
     'rest_framework_simplejwt',
     'identity',
     'gateway',
+    'channels',
     'core.apps.CoreConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -112,6 +114,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'arosPacs.wsgi.application'
+ASGI_APPLICATION = 'arosPacs.asgi.application'
 
 
 # Database
