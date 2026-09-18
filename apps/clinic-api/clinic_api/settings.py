@@ -19,11 +19,18 @@ import os
 CORE_API_URL = "http://localhost:8000"
 CORE_API_JWKS_URL = f"{CORE_API_URL}/api/v1/.well-known/jwks.json"
 WEBHOOK_SECRET = "super-secret-hmac-key"  # Dev dummy — use env var in prod
+REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1')
 ORTHANC_WEBHOOK_SECRET = "local-orthanc-secret"
 ORTHANC_WADO_URL = "http://localhost:8042"  # Dev dummy — use env var in prod
-CLINIC_SLUG = os.getenv("CLINIC_SLUG", "demo-clinic")
+# Identify this clinic node instance
+CLINIC_SLUG = os.getenv("CLINIC_SLUG", "aros-coyoacan")
 
-
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_URL,
+    }
+}
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -77,6 +84,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'clinic_api.wsgi.application'
+
 
 
 # Database

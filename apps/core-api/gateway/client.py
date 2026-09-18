@@ -1,9 +1,8 @@
 import httpx
 import pybreaker
 
-# Global Async HTTPX client for multiplexing connections across clinics
-# Configured with a 5.0 seconds global timeout to avoid hanging the Gateway
-http_client = httpx.AsyncClient(timeout=5.0)
+# Global Async HTTPX client removed to prevent async_to_sync event loop deadlocks.
+# Clients should be instantiated per request or within the specific event loop context.
 
 # In-memory dictionary to store Circuit Breakers per Clinic Slug
 # This prevents one failing clinic from dragging down the rest of the Federated Query.

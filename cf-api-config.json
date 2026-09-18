@@ -1,0 +1,38 @@
+{
+    "CallerReference": "api-alb-cf-dist",
+    "Origins": {
+        "Quantity": 1,
+        "Items": [
+            {
+                "Id": "ALB-aros-core-alb",
+                "DomainName": "aros-core-alb-2118564600.us-east-1.elb.amazonaws.com",
+                "CustomOriginConfig": {
+                    "HTTPPort": 80,
+                    "HTTPSPort": 443,
+                    "OriginProtocolPolicy": "http-only",
+                    "OriginSslProtocols": {
+                        "Quantity": 1,
+                        "Items": ["TLSv1.2"]
+                    }
+                }
+            }
+        ]
+    },
+    "DefaultCacheBehavior": {
+        "TargetOriginId": "ALB-aros-core-alb",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "AllowedMethods": {
+            "Quantity": 7,
+            "Items": ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"],
+            "CachedMethods": {
+                "Quantity": 2,
+                "Items": ["HEAD", "GET"]
+            }
+        },
+        "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+        "OriginRequestPolicyId": "216adef6-5c7f-47e4-b362-e732665b2062",
+        "Compress": true
+    },
+    "Comment": "CloudFront distribution for AROS API ALB",
+    "Enabled": true
+}

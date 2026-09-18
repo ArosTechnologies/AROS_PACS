@@ -39,10 +39,15 @@ for port in 8000 8001 3000 5173 5174 5175; do
   fi
 done
 
-# Stop Docker infrastructure
+# Stop Docker infrastructure and wipe data
 if command -v docker &> /dev/null && docker info > /dev/null 2>&1; then
-  echo -e "${YELLOW}Stopping Docker containers...${NC}"
-  docker compose -f docker-compose.infra.yml down
+  echo -e "${YELLOW}Stopping Docker containers and wiping data volumes...${NC}"
+  docker compose -f docker-compose.infra.yml down -v
 fi
+
+# Wipe local SQLite databases
+echo -e "${YELLOW}Deleting local SQLite databases...${NC}"
+rm -f "$ROOT_DIR/apps/core-api/db.sqlite3"
+rm -f "$ROOT_DIR/apps/clinic-api/db.sqlite3"
 
 echo -e "${GREEN}${BOLD}✓ All AROS PACS services and containers stopped successfully.${NC}"

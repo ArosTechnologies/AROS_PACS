@@ -11,18 +11,35 @@ class ReportView(APIView):
         data = request.data
         study_uid = data.get("study_uid")
         try:
-            report = Report.objects.create(
-                status=data.get("status", "PEN"),
-                findings=data.get("findings", ""),
-                conclusions=data.get("conclusions", ""),
-            )
+            report = None
+            study = None
             
             if study_uid:
                 from clinical_data.models import Study
-                study = Study.objects.get(study_uid=study_uid)
-                study.report = report
-                study.save()
+                study = Study.objects.filter(study_uid=study_uid).first()
+                if study and study.report:
+                    report = study.report
+                    report.status = data.get("status", "PEN")
+                    report.findings = data.get("findings", "")
+                    report.conclusions = data.get("conclusions", "")
+                    report.save()
+            
+            if not report:
+                report = Report.objects.create(
+                    status=data.get("status", "PEN"),
+                    findings=data.get("findings", ""),
+                    conclusions=data.get("conclusions", ""),
+                )
+                if study:
+                    study.report = report
+                    study.save()
                 
+            try:
+                from core_ws.broadcast import notify_clinic_report_completed
+                notify_clinic_report_completed(report, study)
+            except Exception as e:
+                print(f"WS notification error: {e}")
+
             return Response({"status": "created", "id": report.id_report}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

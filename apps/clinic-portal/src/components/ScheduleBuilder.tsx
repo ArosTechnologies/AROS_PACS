@@ -112,9 +112,15 @@ export default function ScheduleBuilder({ value, onChange }: ScheduleBuilderProp
     setActivePreset('custom');
   };
 
-  const applyPreset = (type: 'standard' | 'extended' | '24_7' | 'continuous_sat') => {
+  const applyPreset = (type: 'standard' | 'extended' | '24_7' | 'continuous_sat' | 'custom') => {
     let preset: ScheduleState;
-    if (type === 'standard') {
+    if (type === 'custom') {
+      preset = {
+        weekdays: { enabled: true, open: '', close: '' },
+        saturday: { enabled: true, open: '', close: '' },
+        sunday: { enabled: true, open: '', close: '' },
+      };
+    } else if (type === 'standard') {
       preset = {
         weekdays: { enabled: true, open: '07:00', close: '20:00' },
         saturday: { enabled: true, open: '08:00', close: '15:00' },
@@ -202,11 +208,11 @@ export default function ScheduleBuilder({ value, onChange }: ScheduleBuilderProp
           </button>
           <button
             type="button"
-            disabled
-            className={`px-2.5 py-1 border text-[11px] font-bold shadow-xs transition-colors ${
+            onClick={() => setActivePreset('custom')}
+            className={`px-2.5 py-1 border text-[11px] font-bold shadow-xs cursor-pointer transition-colors ${
               activePreset === 'custom'
                 ? 'bg-[var(--color-clinic-accent)] text-white border-[var(--color-clinic-accent)]'
-                : 'bg-slate-100 border-slate-200 text-slate-400'
+                : 'bg-white border-slate-300 text-slate-700 hover:border-slate-400'
             }`}
           >
             Personalizado

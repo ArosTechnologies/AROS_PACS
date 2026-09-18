@@ -7,7 +7,7 @@
 
   /* White-label dynamic colors */
   --color-clinic-accent: var(--clinic-primary, #0284c7); /* fallback to tailwind sky-600 */
-  --color-clinic-hover: var(--clinic-hover, #0369a1); /* fallback to tailwind sky-700 */
+  
 
   /* Neutral palette for Clean Enterprise */
   --color-primary: #ffffff;
@@ -54,7 +54,7 @@
   }
 
   .enterprise-btn:hover {
-    @apply bg-[var(--color-clinic-hover)] border-[var(--color-clinic-hover)] -translate-y-0.5 shadow-md;
+    @apply -translate-y-0.5 shadow-md brightness-90;
   }
 
   .enterprise-btn-secondary {

@@ -7,17 +7,19 @@ from asgiref.sync import async_to_sync
 
 
 def _send_to_group(group_name, notification_type, message, data=None):
-    """Send a notification to a channel group."""
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        group_name,
-        {
-            'type': 'send_notification',
-            'notification_type': notification_type,
-            'message': message,
-            'data': data or {},
-        }
-    )
+    """Send a notification to a channel group (Disabled as websockets are removed)."""
+    # channel_layer = get_channel_layer()
+    # if channel_layer:
+    #     async_to_sync(channel_layer.group_send)(
+    #         group_name,
+    #         {
+    #             'type': 'send_notification',
+    #             'notification_type': notification_type,
+    #             'message': message,
+    #             'data': data or {},
+    #         }
+    #     )
+    pass
 
 
 def notify_new_study(study):
@@ -184,3 +186,60 @@ def notify_images_available(study):
     for doctor in study.id_patient.associated_doctors.all():
         _send_to_group(f'associate_{doctor.user.id}', 'images_available', 'Imágenes de estudio de paciente disponibles', data)
 
+
+def notify_consent_revoked(patient, doctor):
+    """
+    A patient revoked clinical data access for an associated doctor.
+    Notify: the associate doctor (instant access removal).
+    """
+    from identity.models import PatientProfile
+    prof = getattr(patient, 'patient_profile', None)
+    patient_name = f"{prof.first_name} {prof.last_name}".strip() if prof and (prof.first_name or prof.last_name) else "Paciente"
+
+    data = {
+        'patient_id': str(patient.id),
+        'patient_name': patient_name,
+    }
+    _send_to_group(f'associate_{doctor.id}', 'consent_revoked', f'{patient_name} ha revocado su consentimiento de acceso', data)
+
+
+def notify_consent_granted(patient, doctor):
+    """
+    A patient granted clinical data access to an associated doctor.
+    Notify: the associate doctor (new patient available).
+    """
+    from identity.models import PatientProfile
+    prof = getattr(patient, 'patient_profile', None)
+    patient_name = f"{prof.first_name} {prof.last_name}".strip() if prof and (prof.first_name or prof.last_name) else "Paciente"
+
+    data = {
+        'patient_id': str(patient.id),
+        'patient_name': patient_name,
+    }
+    _send_to_group(f'associate_{doctor.id}', 'consent_granted', f'{patient_name} le ha otorgado acceso a su expediente clínico', data)
+
+def notify_new_appointment(appointment):
+    """
+    A new appointment was requested.
+    Notify: all assistants of the clinic.
+    """
+    data = {
+        'appointment_id': appointment.id,
+        'clinic_slug': appointment.clinic.slug,
+    }
+    _send_to_group('assistant_all', 'new_appointment', 'Nueva solicitud de cita', data)
+
+def notify_appointment_status_changed(appointment):
+    """
+    An appointment was accepted, rejected, or proposed a new time.
+    Notify: the patient and the creator (e.g. associate doctor).
+    """
+    data = {
+        'appointment_id': appointment.id,
+        'status': appointment.status,
+    }
+    
+    _send_to_group(f'patient_{appointment.patient.id}', 'appointment_status_changed', f'Tu cita ha sido actualizada a {appointment.status}', data)
+    
+    if appointment.created_by != appointment.patient:
+        _send_to_group(f'associate_{appointment.created_by.id}', 'appointment_status_changed', f'La cita que solicitaste ha sido actualizada a {appointment.status}', data)

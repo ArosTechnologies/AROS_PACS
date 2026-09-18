@@ -7,6 +7,9 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'X-Portal-Type': 'physician',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
 });
 
@@ -83,6 +86,9 @@ api.interceptors.response.use(
         // Update the default header for future requests
         api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         
+        // Notify React app
+        window.dispatchEvent(new CustomEvent('token_refreshed', { detail: newAccessToken }));
+        
         // Update the failed request header
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
@@ -94,7 +100,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // Refresh token expired or is invalid. Log out the user.
         processQueue(refreshError, null);
-        localStorage.removeItem('token');
+        localStorage.removeItem('physician_token');
+        localStorage.removeItem('physician_user');
         // Let the application handle the redirect based on the missing token
         // E.g., a reload or triggering a state change
         if (window.location.pathname !== '/') {

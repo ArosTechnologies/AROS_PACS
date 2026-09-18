@@ -3,6 +3,7 @@ from .views.federated import FederatedStudiesView
 from .views.proxy import WadoRsProxyView
 from .views.webhooks import ClinicWebhookReceiver
 from .views.reports import StudyReportPDFView, StudyReportPreviewPDFView
+from .views.clinic_agenda import ClinicAgendaView
 
 urlpatterns = [
     path('studies/', FederatedStudiesView.as_view(), name='federated_studies'),
@@ -13,4 +14,7 @@ urlpatterns = [
     # Reports
     path('studies/<str:study_id>/report/pdf/', StudyReportPDFView.as_view(), name='study_report_pdf'),
     path('clinic-config/report-preview/', StudyReportPreviewPDFView.as_view(), name='report_preview'),
+    
+    # Agenda
+    path('agenda/', ClinicAgendaView.as_view(), name='clinic_agenda'),
 ]

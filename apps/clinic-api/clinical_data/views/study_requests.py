@@ -19,6 +19,12 @@ class StudyRequestView(APIView):
                 study_type=data.get("study_type", ""),
                 accession_number=data.get("accession_number"),
             )
+            try:
+                from core_ws.broadcast import notify_clinic_study_request
+                notify_clinic_study_request(study_req)
+            except Exception as e:
+                print(f"WS notification error: {e}")
+
             return Response({"status": "created", "id": study_req.id_request}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

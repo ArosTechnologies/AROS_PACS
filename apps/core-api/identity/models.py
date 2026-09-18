@@ -1,4 +1,5 @@
 import uuid
+from datetime import time
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
@@ -70,6 +71,7 @@ class StaffProfile(models.Model):
     Profile for clinical staff (Radiologist, Assistant, Admin, Superadmin).
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
+    clinic = models.ForeignKey('ClinicRegistry', on_delete=models.CASCADE, null=True, blank=True, related_name='staff_members')
     first_name = models.CharField(max_length=255, blank=True, default='')
     last_name = models.CharField(max_length=255, blank=True, default='')
     phone = models.CharField(max_length=50, blank=True, default='')
@@ -104,6 +106,8 @@ class ClinicRegistry(models.Model):
     latitude = models.FloatField(default=19.4326, help_text="Latitud calculada para el mapa")
     longitude = models.FloatField(default=-99.1332, help_text="Longitud calculada para el mapa")
     opening_hours = models.CharField(max_length=255, blank=True, default='Lun - Vie: 07:00 - 20:00 | Sáb: 08:00 - 14:00')
+    opening_time = models.TimeField(default=time(7, 0))
+    closing_time = models.TimeField(default=time(20, 0))
     report_layout = models.JSONField(
         default=dict,
         blank=True,
@@ -221,4 +225,38 @@ class PatientDoctorConsent(models.Model):
         unique_together = ('patient', 'doctor')
         indexes = [
             models.Index(fields=['patient', 'doctor'], name='idx_patient_doctor_consent'),
+        ]
+
+class Appointment(models.Model):
+    """
+    Appointments requested by patients or associated doctors for a specific clinic.
+    """
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+        ('PROPOSED', 'Proposed New Time'),
+        ('CANCELLED', 'Cancelled')
+    ]
+    
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments')
+    clinic = models.ForeignKey(ClinicRegistry, on_delete=models.CASCADE, related_name='appointments')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_appointments')
+    
+    modality = models.CharField(max_length=50, blank=True, default='', help_text="Optional modality or study type")
+    
+    requested_date = models.DateTimeField()
+    proposed_date = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    notes = models.TextField(blank=True, default='')
+    clinic_notes = models.TextField(blank=True, default='', help_text="Razón de rechazo o propuesta por la clínica")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-requested_date']
+        indexes = [
+            models.Index(fields=['clinic', 'status']),
+            models.Index(fields=['patient', 'status']),
         ]

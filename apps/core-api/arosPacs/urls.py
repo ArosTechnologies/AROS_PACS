@@ -2,12 +2,15 @@ from django.contrib import admin
 from django.urls import path, include
 from core.views import health_check, ready_check
 from identity.views import JWKSView
+from gateway.views.clinic_worklist import ClinicWorklistProxyView, ClinicReportProxyView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('identity.urls')),
     path('api/v1/.well-known/jwks.json', JWKSView.as_view(), name='jwks'),
     path('api/v1/gateway/', include('gateway.urls')),
+    path('api/v1/clinical/studies/', ClinicWorklistProxyView.as_view(), name='clinic_worklist_proxy'),
+    path('api/v1/clinical_data/reports/', ClinicReportProxyView.as_view(), name='clinic_report_proxy'),
     path('health/', health_check, name='health_check'),
     path('ready/', ready_check, name='ready_check'),
 ]

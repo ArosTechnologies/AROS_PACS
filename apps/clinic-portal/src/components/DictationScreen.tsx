@@ -25,16 +25,20 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
     date: 'N/A'
   });
 
+  const [findings, setFindings] = useState('');
+  const [conclusions, setConclusions] = useState('');
+  const [isCompleted, setIsCompleted] = useState(false);
+
   useEffect(() => {
     // We could fetch a single study if the endpoint supports it, 
     // but for now let's just get the list and find it.
-    api.get('/clinical_data/studies/')
+    api.get('/clinical/studies/')
       .then(res => {
-        const studies = res.data.studies || [];
-        const found = studies.find((s: any) => s.study_instance_uid === studyUid);
+        const studies = Array.isArray(res.data) ? res.data : (res.data.studies || []);
+        const found = studies.find((s: any) => (s.study_uid || s.study_instance_uid) === studyUid);
         if (found) {
           setPatient({
-            name: found.patient_name || 'Desconocido',
+            name: found.patient_name || 'Paciente Demo',
             dob: found.patient_dob || 'N/A',
             gender: 'Masculino', // TODO: backend doesn't return gender yet
             mrn: `ID-${found.patient_id || 'N/A'}`
@@ -44,16 +48,18 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
             description: found.study_description || 'Estudio DICOM',
             date: found.study_date || 'N/A'
           });
+          if (found.report) {
+            setFindings(found.report.findings || '');
+            setConclusions(found.report.conclusions || '');
+            setIsCompleted(found.report.status === 'COM');
+          }
         }
       })
       .catch(console.error);
   }, [studyUid]);
 
-  const [findings, setFindings] = useState('');
-  const [conclusions, setConclusions] = useState('');
-
   const modules = {
-    toolbar: [
+    toolbar: isCompleted ? false : [
       [{ 'header': [1, 2, false] }],
       ['bold', 'italic', 'underline', 'strike'],
       [{'list': 'ordered'}, {'list': 'bullet'}],
@@ -113,7 +119,7 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
         {/* Left Pane: OHIF Viewer */}
         <div className="h-full bg-black relative">
           <iframe 
-            src={`http://localhost:3000/viewer?StudyInstanceUIDs=${studyUid}`}
+            src={`http://localhost:3000/viewer/${studyUid}`}
             className="w-full h-full border-none"
             title="OHIF Viewer"
           />
@@ -159,6 +165,7 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
                   value={findings} 
                   onChange={setFindings}
                   modules={modules}
+                  readOnly={isCompleted}
                   className="h-full flex flex-col"
                 />
               </div>
@@ -175,6 +182,7 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
                   value={conclusions} 
                   onChange={setConclusions}
                   modules={modules}
+                  readOnly={isCompleted}
                   className="h-full flex flex-col"
                 />
               </div>
@@ -182,21 +190,23 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
           </div>
 
           {/* Action Buttons */}
-          <div className="p-5 border-t border-slate-200 bg-white shrink-0 flex flex-wrap gap-4 justify-center shadow-[0_-4px_10px_rgba(0,0,0,0.02)] relative z-10">
-            <button 
-              className="enterprise-btn-secondary flex-1 whitespace-nowrap min-w-[140px] text-sm"
-              onClick={() => handleSave('PEN')}
-            >
-              Guardar Borrador
-            </button>
-            <button 
-              className="enterprise-btn flex-1 shadow-md flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] text-sm"
-              onClick={() => handleSave('FIN')}
-            >
-              <span className="material-symbols-outlined text-sm">send</span>
-              Completar Reporte
-            </button>
-          </div>
+          {!isCompleted && (
+            <div className="p-5 border-t border-slate-200 bg-white shrink-0 flex flex-wrap gap-4 justify-center shadow-[0_-4px_10px_rgba(0,0,0,0.02)] relative z-10">
+              <button 
+                className="enterprise-btn-secondary flex-1 whitespace-nowrap min-w-[140px] text-sm"
+                onClick={() => handleSave('PEN')}
+              >
+                Guardar Borrador
+              </button>
+              <button 
+                className="enterprise-btn flex-1 shadow-md flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] text-sm"
+                onClick={() => handleSave('COM')}
+              >
+                <span className="material-symbols-outlined text-sm">send</span>
+                Completar Reporte
+              </button>
+            </div>
+          )}
         </div>
       </Split>
     </div>,

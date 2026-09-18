@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from './api';
 import ImageCropper from './components/ImageCropper';
+import AppointmentsView from './components/AppointmentsView';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 
-type ViewState = 'login' | 'home' | 'studies' | 'patients' | 'profile' | 'study_detail';
+type ViewState = 'login' | 'home' | 'studies' | 'patients' | 'profile' | 'study_detail' | 'appointments';
 
 export default function App() {
   const [view, setView] = useState<ViewState>('login');
@@ -58,14 +59,27 @@ export default function App() {
     }
   };
 
+  // Toast notification state
+  const [toasts, setToasts] = useState<{id: number; type: string; message: string; icon: string}[]>([]);
+  const toastIdRef = useRef(0);
+
+  const addToast = useCallback((type: string, message: string, icon = 'info') => {
+    const id = ++toastIdRef.current;
+    setToasts(prev => [...prev, { id, type, message, icon }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
+  }, []);
+
+
+
   useEffect(() => {
     if (token) {
       if (view === 'login') setView('home');
       fetchData();
-      const interval = setInterval(() => fetchData(true), 60000); // 60 seconds background poll
+      const interval = setInterval(() => fetchData(true), 60000);
       return () => clearInterval(interval);
     }
   }, [token]);
+
 
   if (!token || view === 'login') {
     return (
@@ -76,10 +90,35 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary text-text-primary flex flex-col md:flex-row">
+    <div className="min-h-screen bg-secondary text-text-primary flex flex-col md:flex-row pt-16 md:pt-0 pb-16 md:pb-0">
+      {/* Mobile Topbar */}
+      <div className="md:hidden fixed top-0 left-0 w-full h-16 bg-accent text-white flex items-center justify-between px-4 z-50 shadow-md">
+        <h1 className="text-2xl m-0 flex tracking-tighter leading-none">
+          <span className="font-extrabold text-slate-900">PORTAL</span>
+          <span className="font-extrabold text-white">MÉDICO</span>
+        </h1>
+        <button 
+          onClick={async () => { 
+            try { await api.post('/auth/logout/'); } catch(e) { console.error(e); }
+            setToken(null); 
+            setDoctorProfile({});
+            setPatients([]);
+            setStudies([]);
+            setSelectedStudy(null);
+            setPatientFilter('');
+            localStorage.removeItem('physician_token'); 
+            localStorage.removeItem('physician_user'); 
+            setView('login'); 
+          }}
+          className="p-2 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+          title="Cerrar sesión"
+        >
+          <span className="material-symbols-outlined text-2xl">logout</span>
+        </button>
+      </div>
       {/* Sidebar */}
-      <aside className="w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col md:fixed md:h-full z-50">
-        <div className="p-8 bg-accent text-white">
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-col z-50 h-full">
+        <div className="p-8 bg-accent text-white flex justify-between items-start">
           <h1 className="text-4xl m-0 flex flex-col tracking-tighter leading-none">
             <span className="font-extrabold text-slate-900">PORTAL</span>
             <span className="font-extrabold text-white">MÉDICO</span>
@@ -110,6 +149,14 @@ export default function App() {
             <span className="material-symbols-outlined text-xl">medical_information</span>
             Estudios Recientes
           </button>
+
+          <button 
+            onClick={() => { setView('appointments'); setPatientFilter(''); }} 
+            className={`flex items-center gap-3 px-4 py-3 font-medium transition-all duration-200 text-left cursor-pointer ${view === 'appointments' ? 'bg-slate-50 text-accent font-semibold' : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            <span className="material-symbols-outlined text-xl">calendar_month</span>
+            Agenda
+          </button>
         </nav>
 
         <div className="p-4 border-t border-slate-200 bg-white flex flex-col gap-2">
@@ -130,7 +177,18 @@ export default function App() {
             </div>
           </button>
           <button 
-            onClick={() => { setToken(null); localStorage.removeItem('physician_token'); setView('login'); }}
+            onClick={async () => { 
+              try { await api.post('/auth/logout/'); } catch(e) { console.error(e); }
+              setToken(null); 
+              setDoctorProfile({});
+              setPatients([]);
+              setStudies([]);
+              setSelectedStudy(null);
+              setPatientFilter('');
+              localStorage.removeItem('physician_token'); 
+              localStorage.removeItem('physician_user'); 
+              setView('login'); 
+            }}
             className="w-full flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 border border-slate-200 font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">logout</span>
@@ -145,7 +203,7 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 bg-slate-50 animate-fade-in relative flex flex-col h-screen overflow-y-auto">
+      <main className="flex-1 md:ml-72 bg-slate-50 animate-fade-in relative flex flex-col h-full overflow-y-auto">
         {view === 'home' && (
           <div className="p-6 md:p-10 w-full">
             <HomeView 
@@ -197,7 +255,66 @@ export default function App() {
             />
           </div>
         )}
+        {view === 'appointments' && (
+          <div className="p-6 md:p-10 w-full">
+            <AppointmentsView patients={patients} />
+          </div>
+        )}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full h-16 bg-white border-t border-slate-200 flex items-center justify-around z-50 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <button onClick={() => setView('home')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'home' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'home' ? "'FILL' 1" : "'FILL' 0" }}>home</span>
+        </button>
+        <button onClick={() => setView('patients')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'patients' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'patients' ? "'FILL' 1" : "'FILL' 0" }}>group</span>
+        </button>
+        <button onClick={() => setView('appointments')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'appointments' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'appointments' ? "'FILL' 1" : "'FILL' 0" }}>calendar_month</span>
+        </button>
+        <button onClick={() => setView('studies')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'studies' || view === 'study_detail' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'studies' || view === 'study_detail' ? "'FILL' 1" : "'FILL' 0" }}>medical_information</span>
+        </button>
+        <button onClick={() => setView('profile')} className="flex flex-col items-center justify-center w-12 h-12">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm overflow-hidden transition-all ${view === 'profile' ? 'ring-2 ring-accent ring-offset-2' : 'ring-1 ring-slate-200'}`}>
+            {doctorProfile?.avatar_url ? (
+              <img src={doctorProfile.avatar_url.startsWith('http') ? doctorProfile.avatar_url : `http://localhost:8000${doctorProfile.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-accent text-white flex items-center justify-center">
+                {doctorProfile.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('') || 'DR'}
+              </div>
+            )}
+          </div>
+        </button>
+      </nav>
+
+      {/* Toast Notifications */}
+      <div className="fixed top-20 md:top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" style={{ maxWidth: '380px' }}>
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 shadow-lg border animate-slide-up ${
+              toast.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' :
+              toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
+              'bg-sky-50 border-sky-200 text-sky-900'
+            }`}
+          >
+            <span className={`material-symbols-outlined text-lg mt-0.5 shrink-0 ${
+              toast.type === 'warning' ? 'text-amber-500' :
+              toast.type === 'success' ? 'text-emerald-500' :
+              'text-sky-500'
+            }`}>{toast.icon}</span>
+            <p className="text-sm font-medium leading-snug">{toast.message}</p>
+            <button
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="ml-auto shrink-0 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -261,6 +378,12 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
         }
       }
     } catch (err: any) {
+      console.log('REGISTER ERROR:', err);
+      console.log('STATUS:', err.response?.status);
+      console.log('HAS CONTAINER:', !!document.getElementById("aws-waf-captcha-container"));
+      // @ts-ignore
+      console.log('HAS AWSWAFCAPTCHA:', !!window.AwsWafCaptcha);
+      
       if (err.response?.status === 405) {
         // Render AWS WAF Captcha manually
         setLoading(false);
@@ -298,6 +421,9 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
               console.error(captchaErr);
             }
           });
+          return;
+        } else {
+          setError('El sistema de validación (CAPTCHA) no pudo cargar. Por favor, desactiva temporalmente cualquier bloqueador de anuncios (AdBlock, Escudos de Brave) para esta página y recarga.');
           return;
         }
       }
@@ -451,40 +577,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           </button>
         </div>
 
-        {/* Quick Demo Access */}
-        <div className="mt-6 pt-6 border-t border-slate-200 flex flex-col gap-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Acceso Rápido de Demostración</span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('doctor1@demo.com');
-                setPassword('password123');
-                handleSubmit(undefined, 'doctor1@demo.com', 'password123');
-              }}
-              className="w-full text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer"
-            >
-              <div>
-                <span className="font-bold text-xs text-slate-900 block">Dr. Roberto Gómez</span>
-                <span className="text-[10px] text-slate-500 font-mono">doctor1@demo.com</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('doctor2@demo.com');
-                setPassword('password123');
-                handleSubmit(undefined, 'doctor2@demo.com', 'password123');
-              }}
-              className="w-full text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer"
-            >
-              <div>
-                <span className="font-bold text-xs text-slate-900 block">Dra. Ana Martínez</span>
-                <span className="text-[10px] text-slate-500 font-mono">doctor2@demo.com</span>
-              </div>
-            </button>
-          </div>
-        </div>
+
       </div>
 
       <div className="mt-8 flex items-center justify-center gap-2 animate-slide-up opacity-90">
@@ -676,10 +769,10 @@ function PatientsView({
         <button 
           onClick={refreshPatients} 
           disabled={loading}
-          className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer"
         >
           <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>sync</span>
-          {loading ? 'Sincronizando...' : 'Actualizar Pacientes'}
+          <span>{loading ? 'Sincronizando...' : 'Actualizar Pacientes'}</span>
         </button>
       </div>
 
@@ -806,10 +899,10 @@ function StudiesView({
         <button 
           onClick={refreshStudies} 
           disabled={loading}
-          className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer"
         >
           <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>sync</span>
-          {loading ? 'Sincronizando...' : 'Actualizar Estudios'}
+          <span>{loading ? 'Sincronizando...' : 'Actualizar Estudios'}</span>
         </button>
       </div>
 
@@ -1004,16 +1097,30 @@ function PhysicianStudyDetailView({ study, setView }: { study: any, setView: (v:
               
               <div className="mb-6">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Hallazgos Radiológicos</h4>
-                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-4 border border-slate-200">
-                  {report.findings || 'No se han registrado hallazgos patológicos relevantes en el examen evaluado.'}
-                </p>
+                {report.findings ? (
+                  <div 
+                    className="text-slate-800 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-4 border border-slate-200"
+                    dangerouslySetInnerHTML={{ __html: report.findings }}
+                  />
+                ) : (
+                  <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-4 border border-slate-200">
+                    No se han registrado hallazgos patológicos relevantes en el examen evaluado.
+                  </p>
+                )}
               </div>
               
               <div className="p-4 bg-emerald-50/70 border-l-4 border-emerald-600 mb-8">
                 <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">Conclusión Diagnóstica</h4>
-                <p className="text-emerald-950 font-semibold text-sm leading-relaxed">
-                  {report.conclusions || 'Estudio dentro de límites normales.'}
-                </p>
+                {report.conclusions ? (
+                  <div 
+                    className="text-emerald-950 font-semibold text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: report.conclusions }}
+                  />
+                ) : (
+                  <p className="text-emerald-950 font-semibold text-sm leading-relaxed">
+                    Estudio dentro de límites normales.
+                  </p>
+                )}
               </div>
               
               <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

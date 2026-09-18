@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'identity',
     'gateway',
-    'daphne',
     'core.apps.CoreConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -59,29 +58,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'channels',
 ]
 
 # Django Channels
 ASGI_APPLICATION = 'arosPacs.asgi.application'
 
-# Use Redis for channel layer in production, InMemory for local development
+# Use Redis for cache in production
 REDIS_URL = env('REDIS_URL', default='')
-if REDIS_URL:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [REDIS_URL],
-            },
-        },
-    }
-else:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        },
-    }
 
 if REDIS_URL:
     CACHES = {
@@ -283,6 +266,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-portal-type',
+    'cache-control',
+    'pragma',
+    'expires',
 ]
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True

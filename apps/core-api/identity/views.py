@@ -136,13 +136,13 @@ class LogoutView(APIView):
                 blacklist_token(jti, exp_seconds)
                 
             response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
-            response.delete_cookie(cookie_name)
-            response.delete_cookie("refresh_token")
+            response.delete_cookie(cookie_name, samesite='Lax')
+            response.delete_cookie("refresh_token", samesite='Lax')
             return response
         except TokenError as e:
             response = Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            response.delete_cookie(cookie_name)
-            response.delete_cookie("refresh_token")
+            response.delete_cookie(cookie_name, samesite='Lax')
+            response.delete_cookie("refresh_token", samesite='Lax')
             return response
 
 from rest_framework.permissions import IsAuthenticated
@@ -243,12 +243,14 @@ class ClinicUsersView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        cache_key = "clinic_users"
+        clinic_id = request.user.staff_profile.clinic.slug if hasattr(request.user, 'staff_profile') and request.user.staff_profile.clinic else 'none'
+        cache_key = f"clinic_users_{clinic_id}"
         data = cache.get(cache_key)
         
         if data is None:
             staff_roles = ['Radiólogo', 'Asistente Médico', 'Administrador', 'Superadministrador']
-            users = User.objects.filter(role__name__in=staff_roles).select_related('role', 'staff_profile')
+            clinic = request.user.staff_profile.clinic if hasattr(request.user, 'staff_profile') else None
+            users = User.objects.filter(role__name__in=staff_roles, staff_profile__clinic=clinic).select_related('role', 'staff_profile')
             data = []
             for u in users:
                 role_name = u.role.name if u.role else 'Desconocido'
@@ -395,6 +397,23 @@ class PatientListView(APIView):
 
     def get(self, request):
         patients = PatientProfile.objects.all().select_related('user')
+        search_query = request.GET.get('q', '').strip()
+        
+        # Si el usuario es staff de una clínica, filtrar pacientes de esa clínica
+        if hasattr(request.user, 'staff_profile') and request.user.staff_profile.clinic:
+            clinic = request.user.staff_profile.clinic
+            patients = patients.filter(
+                user__federated_identities__clinic=clinic
+            ).distinct()
+            
+        if search_query:
+            from django.db.models import Q
+            patients = patients.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(curp_or_mrn__icontains=search_query)
+            )
+            
         data = []
         for p in patients:
             data.append({
@@ -412,13 +431,14 @@ class ClinicConfigView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        cache_key = "clinic_config"
+        if not hasattr(request.user, 'staff_profile') or not request.user.staff_profile.clinic:
+            return Response({"error": "User does not belong to a clinic"}, status=403)
+            
+        clinic = request.user.staff_profile.clinic
+        cache_key = f"clinic_config_{clinic.slug}"
         data = cache.get(cache_key)
         
         if data is None:
-            clinic = ClinicRegistry.objects.first()
-            if not clinic:
-                return Response({"error": "Clinic not found"}, status=404)
             data = {
                 "name": clinic.name,
                 "primary_color": clinic.primary_color,
@@ -432,17 +452,20 @@ class ClinicConfigView(APIView):
                 "longitude": clinic.longitude,
                 "report_layout": clinic.report_layout
             }
-            cache.set(cache_key, data, timeout=300)
+            cache.set(cache_key, data, timeout=86400)
             
         return Response(data)
         
     def put(self, request):
-        if not request.user.role or request.user.role.name != 'Superadministrador':
-            return Response({"error": "Solo el Superadministrador puede modificar la clínica."}, status=403)
+        if not hasattr(request.user, 'staff_profile') or not request.user.staff_profile.clinic:
+            return Response({"error": "User does not belong to a clinic"}, status=403)
             
-        clinic = ClinicRegistry.objects.first()
+        clinic = request.user.staff_profile.clinic
         if not clinic:
             return Response({"error": "Clinic not found"}, status=404)
+            
+        if not request.user.role or request.user.role.name != 'Superadministrador':
+            return Response({"error": "Solo el Superadministrador puede modificar la clínica."}, status=403)
             
         clinic.name = request.data.get('name', clinic.name)
         clinic.primary_color = request.data.get('primary_color', clinic.primary_color)
@@ -482,7 +505,7 @@ class ClinicConfigView(APIView):
         # Invalidate patient clinics cache so the map updates instantly
         from django.core.cache import cache
         cache.delete('clinics_view_list')
-        cache.delete('clinic_config')
+        cache.delete(f'clinic_config_{clinic.slug}')
         
         return Response({
             "name": clinic.name,

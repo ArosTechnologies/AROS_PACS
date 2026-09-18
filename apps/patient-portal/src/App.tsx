@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from './api';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import DateSelector from './components/DateSelector';
 import ImageCropper from './components/ImageCropper';
+import AppointmentsView from './components/AppointmentsView';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 
@@ -16,7 +19,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-type ViewState = 'login' | 'home' | 'studies' | 'profile' | 'clinics' | 'doctors' | 'study_detail';
+type ViewState = 'login' | 'home' | 'studies' | 'profile' | 'clinics' | 'doctors' | 'study_detail' | 'appointments';
 
 export default function App() {
   const [view, setView] = useState<ViewState>('login');
@@ -31,24 +34,48 @@ export default function App() {
   const [clinics, setClinics] = useState<any[]>([]);
   const [dataFetched, setDataFetched] = useState(false);
 
+  // Toast notification state
+  const [toasts, setToasts] = useState<{id: number; type: string; message: string; icon: string}[]>([]);
+  const toastIdRef = useRef(0);
+
+  const addToast = useCallback((type: string, message: string, icon = 'info') => {
+    const id = ++toastIdRef.current;
+    setToasts(prev => [...prev, { id, type, message, icon }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
+  }, []);
+
+  const fetchStudies = () => {
+    if (token) {
+      api.get('/gateway/studies/').then(res => {
+        setStudies(res.data.studies || []);
+        if (res.data.partial_history) setPartialHistory(true);
+      }).catch(console.error);
+    }
+  };
+
+  const fetchDoctors = () => {
+    if (token) api.get('/auth/patient/doctors/').then(res => setDoctors(res.data)).catch(console.error);
+  };
+
+  useEffect(() => {
+    const handleTokenRefreshed = (e: any) => setToken(e.detail);
+    window.addEventListener('token_refreshed', handleTokenRefreshed);
+    return () => window.removeEventListener('token_refreshed', handleTokenRefreshed);
+  }, []);
+
   useEffect(() => {
     if (token && view === 'login') setView('home');
     
     if (token && !dataFetched) {
       api.get('/auth/patient/me/').then(res => setPatient(res.data)).catch(console.error);
-      api.get('/gateway/studies/').then(res => {
-        setStudies(res.data.studies || []);
-        if (res.data.partial_history) setPartialHistory(true);
-      }).catch(console.error);
-      api.get('/auth/patient/doctors/').then(res => setDoctors(res.data)).catch(console.error);
+      fetchStudies();
+      fetchDoctors();
       api.get('/auth/clinics/').then(res => setClinics(res.data)).catch(console.error);
       setDataFetched(true);
     }
   }, [token, view, dataFetched]);
 
-  const fetchDoctors = () => {
-    if (token) api.get('/auth/patient/doctors/').then(res => setDoctors(res.data)).catch(console.error);
-  };
+
 
   if (!token || view === 'login') {
     return (
@@ -59,10 +86,35 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary text-text-primary flex flex-col md:flex-row">
-      {/* Sidebar (Clean Enterprise Style - Square) */}
-      <aside className="w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col md:fixed md:h-full z-50">
-        <div className="p-8 bg-accent text-white">
+    <div className="min-h-screen md:h-screen bg-secondary text-text-primary flex flex-col md:flex-row pt-16 md:pt-0 pb-16 md:pb-0 md:overflow-hidden">
+      {/* Mobile Topbar */}
+      <div className="md:hidden fixed top-0 left-0 w-full h-16 bg-accent text-white flex items-center justify-between px-4 z-50 shadow-md">
+        <h1 className="text-2xl m-0 flex tracking-tighter leading-none">
+          <span className="font-extrabold text-slate-900">MEDI</span>
+          <span className="font-extrabold text-white">KALI.</span>
+        </h1>
+        <button 
+          onClick={async () => { 
+            try { await api.post('/auth/logout/'); } catch(e) { console.error(e); }
+            setToken(null); 
+            setPatient(null);
+            setStudies([]);
+            setDoctors([]);
+            setClinics([]);
+            setDataFetched(false);
+            localStorage.removeItem('patient_token'); 
+            localStorage.removeItem('patient_user'); 
+            setView('login'); 
+          }}
+          className="p-2 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+          title="Cerrar sesión"
+        >
+          <span className="material-symbols-outlined text-2xl">logout</span>
+        </button>
+      </div>
+      {/* Sidebar (Desktop Only) */}
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-col z-50 h-full">
+        <div className="p-8 bg-accent text-white flex justify-between items-start">
           <h1 className="text-4xl m-0 flex flex-col tracking-tighter leading-none">
             <span className="font-extrabold text-slate-900">MEDI</span>
             <span className="font-extrabold text-white">KALI.</span>
@@ -84,6 +136,14 @@ export default function App() {
           >
             <span className="material-symbols-outlined text-xl">medical_information</span>
             Mis Estudios
+          </button>
+          
+          <button 
+            onClick={() => setView('appointments')} 
+            className={`flex items-center gap-3 px-4 py-3  font-medium transition-all duration-200 text-left ${view === 'appointments' ? 'bg-slate-50 text-accent font-semibold' : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            <span className="material-symbols-outlined text-xl">calendar_month</span>
+            Mis Citas
           </button>
           
 
@@ -122,7 +182,18 @@ export default function App() {
             </div>
           </button>
           <button 
-            onClick={() => { setToken(null); localStorage.removeItem('patient_token'); setView('login'); }}
+            onClick={async () => { 
+              try { await api.post('/auth/logout/'); } catch(e) { console.error(e); }
+              setToken(null); 
+              setPatient(null);
+              setStudies([]);
+              setDoctors([]);
+              setClinics([]);
+              setDataFetched(false);
+              localStorage.removeItem('patient_token'); 
+              localStorage.removeItem('patient_user'); 
+              setView('login'); 
+            }}
             className="w-full flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 border border-slate-200 font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">logout</span>
@@ -137,14 +208,72 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 bg-slate-50 animate-fade-in relative flex flex-col h-screen overflow-y-auto">
+      <main className="flex-1 md:ml-72 bg-slate-50 animate-fade-in relative flex flex-col h-full overflow-y-auto">
         {view === 'home' && <div className="p-6 md:p-10 w-full"><HomeView setView={setView} patient={patient} studies={studies} doctors={doctors} /></div>}
         {view === 'studies' && <div className="p-6 md:p-10 w-full"><DashboardView setView={setView} setSelectedStudy={setSelectedStudy} studies={studies} partialHistory={partialHistory} /></div>}
         {view === 'study_detail' && <div className="p-6 md:p-10 w-full"><StudyDetailView study={selectedStudy} setView={setView} /></div>}
         {view === 'profile' && <div className="p-6 md:p-10 w-full"><ProfileView patient={patient} setPatient={setPatient} /></div>}
         {view === 'doctors' && <div className="p-6 md:p-10 w-full"><DoctorsView doctors={doctors} fetchDoctors={fetchDoctors} /></div>}
         {view === 'clinics' && <ClinicsView clinics={clinics} />}
+        {view === 'appointments' && <div className="p-6 md:p-10 w-full"><AppointmentsView /></div>}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full h-16 bg-white border-t border-slate-200 flex items-center justify-around z-50 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <button onClick={() => setView('home')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'home' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'home' ? "'FILL' 1" : "'FILL' 0" }}>home</span>
+        </button>
+        <button onClick={() => setView('studies')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'studies' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'studies' ? "'FILL' 1" : "'FILL' 0" }}>medical_information</span>
+        </button>
+        <button onClick={() => setView('appointments')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'appointments' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'appointments' ? "'FILL' 1" : "'FILL' 0" }}>calendar_month</span>
+        </button>
+        <button onClick={() => setView('doctors')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'doctors' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'doctors' ? "'FILL' 1" : "'FILL' 0" }}>stethoscope</span>
+        </button>
+        <button onClick={() => setView('clinics')} className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${view === 'clinics' ? 'text-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: view === 'clinics' ? "'FILL' 1" : "'FILL' 0" }}>map</span>
+        </button>
+        <button onClick={() => setView('profile')} className="flex flex-col items-center justify-center w-12 h-12">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm overflow-hidden transition-all ${view === 'profile' ? 'ring-2 ring-accent ring-offset-2' : 'ring-1 ring-slate-200'}`}>
+            {patient?.avatar_url ? (
+              <img src={patient.avatar_url.startsWith('http') ? patient.avatar_url : `http://localhost:8000${patient.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-accent text-white flex items-center justify-center">
+                {patient?.name ? patient.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'P'}
+              </div>
+            )}
+          </div>
+        </button>
+      </nav>
+
+      {/* Toast Notifications */}
+      <div className="fixed top-20 md:top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" style={{ maxWidth: '380px' }}>
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 shadow-lg border animate-slide-up ${
+              toast.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' :
+              toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
+              'bg-sky-50 border-sky-200 text-sky-900'
+            }`}
+          >
+            <span className={`material-symbols-outlined text-lg mt-0.5 shrink-0 ${
+              toast.type === 'warning' ? 'text-amber-500' :
+              toast.type === 'success' ? 'text-emerald-500' :
+              'text-sky-500'
+            }`}>{toast.icon}</span>
+            <p className="text-sm font-medium leading-snug">{toast.message}</p>
+            <button
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="ml-auto shrink-0 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -200,6 +329,12 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
         }
       }
     } catch (err: any) {
+      console.log('REGISTER ERROR:', err);
+      console.log('STATUS:', err.response?.status);
+      console.log('HAS CONTAINER:', !!document.getElementById("aws-waf-captcha-container"));
+      // @ts-ignore
+      console.log('HAS AWSWAFCAPTCHA:', !!window.AwsWafCaptcha);
+      
       if (err.response?.status === 405) {
         // Render AWS WAF Captcha manually
         setLoading(false);
@@ -235,6 +370,9 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
               console.error(captchaErr);
             }
           });
+          return;
+        } else {
+          setError('El sistema de validación (CAPTCHA) no pudo cargar. Por favor, desactiva temporalmente cualquier bloqueador de anuncios (AdBlock, Escudos de Brave) para esta página y recarga.');
           return;
         }
       }
@@ -365,54 +503,7 @@ function LoginView({ setToken, setView }: { setToken: (t: string) => void, setVi
           </button>
         </div>
 
-        {/* Quick Demo Access */}
-        <div className="mt-6 pt-6 border-t border-slate-200 flex flex-col gap-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Acceso Rápido de Demostración</span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('paciente1@demo.com');
-                setPassword('password123');
-                handleSubmit(undefined, 'paciente1@demo.com', 'password123');
-              }}
-              className="w-full text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer"
-            >
-              <div>
-                <span className="font-bold text-xs text-slate-900 block">Juan Pérez</span>
-                <span className="text-[10px] text-slate-500 font-mono">paciente1@demo.com</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('paciente2@demo.com');
-                setPassword('password123');
-                handleSubmit(undefined, 'paciente2@demo.com', 'password123');
-              }}
-              className="w-full text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer"
-            >
-              <div>
-                <span className="font-bold text-xs text-slate-900 block">Laura García</span>
-                <span className="text-[10px] text-slate-500 font-mono">paciente2@demo.com</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('paciente3@demo.com');
-                setPassword('password123');
-                handleSubmit(undefined, 'paciente3@demo.com', 'password123');
-              }}
-              className="w-full text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-between cursor-pointer sm:col-span-2"
-            >
-              <div>
-                <span className="font-bold text-xs text-slate-900 block">Carlos Ruiz</span>
-                <span className="text-[10px] text-slate-500 font-mono">paciente3@demo.com</span>
-              </div>
-            </button>
-          </div>
-        </div>
+
       </div>
       
       <div className="mt-8 flex items-center justify-center gap-2 animate-slide-up opacity-90">
@@ -517,6 +608,37 @@ function HomeView({ setView, patient, studies, doctors = [] }: { setView: (v: Vi
 // STUDIES VIEW
 // ----------------------------------------------------------------------
 function DashboardView({ setView, setSelectedStudy, studies, partialHistory }: { setView: (v: ViewState) => void, setSelectedStudy: (s: any) => void, studies: any[], partialHistory: boolean }) {
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  const sortedStudies = [...studies].sort((a, b) => {
+    if (!sortConfig) return 0;
+    
+    let aVal = a[sortConfig.key];
+    let bVal = b[sortConfig.key];
+    
+    // Custom handling for status which is derived from report
+    if (sortConfig.key === 'status') {
+      aVal = a.report ? 'Reporte Final' : 'Pendiente';
+      bVal = b.report ? 'Reporte Final' : 'Pendiente';
+    }
+
+    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) return 'swap_vert';
+    return sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  };
 
   return (
     <div className="pb-12 animate-slide-up">
@@ -551,15 +673,19 @@ function DashboardView({ setView, setSelectedStudy, studies, partialHistory }: {
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-sm">
-                  <th className="p-4 font-semibold">Fecha</th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort('study_date')}>
+                    <div className="flex items-center gap-1">Fecha <span className="material-symbols-outlined text-sm">{getSortIcon('study_date')}</span></div>
+                  </th>
                   <th className="p-4 font-semibold">Modalidad</th>
                   <th className="p-4 font-semibold">Descripción</th>
-                  <th className="p-4 font-semibold text-center">Estatus</th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-center" onClick={() => requestSort('status')}>
+                    <div className="flex items-center justify-center gap-1">Estatus <span className="material-symbols-outlined text-sm">{getSortIcon('status')}</span></div>
+                  </th>
                   <th className="p-4 font-semibold text-right">Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {studies.map((study, idx) => (
+                {sortedStudies.map((study, idx) => (
                   <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                     <td className="p-4 font-medium text-slate-900">{study.study_date}</td>
                     <td className="p-4">
@@ -569,8 +695,8 @@ function DashboardView({ setView, setSelectedStudy, studies, partialHistory }: {
                     </td>
                     <td className="p-4 text-slate-600">{study.study_description || 'Sin descripción'}</td>
                     <td className="p-4 text-center">
-                      {(study.modality === 'MR' || study.modality === 'CT' || (study.study_description || '').toLowerCase().includes('tórax')) ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-1"><span className="material-symbols-outlined text-xs">description</span> Reporte</span>
+                      {study.report ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-1"><span className="material-symbols-outlined text-xs">description</span> Reporte Final</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-2 py-1"><span className="material-symbols-outlined text-xs">pending</span> Pendiente</span>
                       )}
@@ -968,49 +1094,7 @@ function ProfileView({ patient, setPatient }: { patient: any, setPatient?: (p: a
             </div>
           </div>
 
-          {/* Card 3: Conexiones (Estático) */}
-          <div className="enterprise-card p-0 bg-white border border-slate-200">
-            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-white">
-              <h4 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-xl">link</span>
-                Conexiones
-              </h4>
-            </div>
-            <div className="flex flex-col">
-              <div className="p-5 flex items-center justify-between border-b border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white border border-slate-200 flex items-center justify-center p-2 shadow-sm"><img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo" className="w-full h-full object-contain" /></div>
-                  <div>
-                    <h5 className="font-semibold text-slate-900">Google</h5>
-                    <p className="text-xs text-green-600 font-medium flex items-center gap-1"><span className="material-symbols-outlined text-sm">check_circle</span> Conectado</p>
-                  </div>
-                </div>
-                <button className="enterprise-btn-secondary text-sm py-1.5 px-4 text-slate-600 cursor-pointer">Desconectar</button>
-              </div>
-              
-              <div className="p-5 flex items-center justify-between border-b border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white border border-slate-200 flex items-center justify-center p-2 shadow-sm"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple Logo" className="w-full h-full object-contain" /></div>
-                  <div>
-                    <h5 className="font-semibold text-slate-900">Apple</h5>
-                    <p className="text-xs text-slate-500 font-medium">No conectado</p>
-                  </div>
-                </div>
-                <button className="enterprise-btn-secondary text-sm py-1.5 px-4 cursor-pointer">Conectar</button>
-              </div>
 
-              <div className="p-5 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white border border-slate-200 flex items-center justify-center p-1.5 shadow-sm"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" alt="Meta Logo" className="w-full h-full object-contain" /></div>
-                  <div>
-                    <h5 className="font-semibold text-slate-900">Meta</h5>
-                    <p className="text-xs text-slate-500 font-medium">No conectado</p>
-                  </div>
-                </div>
-                <button className="enterprise-btn-secondary text-sm py-1.5 px-4 cursor-pointer">Conectar</button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1048,10 +1132,76 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
   const initialCenter: [number, number] = clinics.length > 0 && clinics[0].lat ? [clinics[0].lat, clinics[0].lng] : [19.4184, -99.1643];
   const [mapCenter, setMapCenter] = useState<[number, number]>(initialCenter);
   const [mapZoom, setMapZoom] = useState<number>(13);
+  const [isSheetExpanded, setIsSheetExpanded] = useState<boolean>(false);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragDelta, setDragDelta] = useState<number>(0);
   const [expandedClinicId, setExpandedClinicId] = useState<string | null>(null);
   const [ratingLoading, setRatingLoading] = useState<string | null>(null);
   const [ratingMsg, setRatingMsg] = useState<{ id: string, type: 'success' | 'error', text: string } | null>(null);
   const markerRefs = useRef<{ [key: string]: L.Marker | null }>({});
+
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [selectedClinicId, setSelectedClinicId] = useState('');
+  const [requestedDateObj, setRequestedDateObj] = useState<Date | null>(null);
+  const [requestedTime, setRequestedTime] = useState<string>('');
+  const [modality, setModality] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const parseWorkingHours = (scheduleStr: string) => {
+    const scheduleMap: Record<number, { open: string; close: string } | null> = { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+    if (!scheduleStr) return scheduleMap;
+    const dayMap: Record<string, number> = { 'dom': 0, 'lun': 1, 'mar': 2, 'mie': 3, 'mié': 3, 'jue': 4, 'vie': 5, 'sab': 6, 'sáb': 6 };
+    const parts = scheduleStr.toLowerCase().split('|');
+    for (const part of parts) {
+      const [daysStr, ...hoursParts] = part.split(':');
+      if (!daysStr || hoursParts.length === 0) continue;
+      const hoursStr = hoursParts.join(':').trim();
+      const [open, close] = hoursStr.split('-').map(s => s.trim());
+      if (!open || !close) continue;
+      const daysParts = daysStr.trim().split('-').map(s => s.trim());
+      if (daysParts.length === 2) {
+        const startDay = dayMap[daysParts[0].substring(0,3)];
+        const endDay = dayMap[daysParts[1].substring(0,3)];
+        if (startDay !== undefined && endDay !== undefined) {
+          for (let i = startDay; i <= endDay; i++) scheduleMap[i] = { open, close };
+        }
+      } else if (daysParts.length === 1) {
+        const day = dayMap[daysParts[0].substring(0,3)];
+        if (day !== undefined) scheduleMap[day] = { open, close };
+      }
+    }
+    if (Object.values(scheduleMap).every(v => v === null)) {
+      for(let i=1; i<=5; i++) scheduleMap[i] = { open: '07:00', close: '20:00' };
+      scheduleMap[6] = { open: '08:00', close: '15:00' };
+    }
+    return scheduleMap;
+  };
+
+  const handleRequestAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestedDateObj || !requestedTime || !selectedClinicId) return;
+    
+    const localDateStr = `${requestedDateObj.getFullYear()}-${(requestedDateObj.getMonth()+1).toString().padStart(2, '0')}-${requestedDateObj.getDate().toString().padStart(2, '0')}T${requestedTime}:00`;
+    
+    try {
+      await api.post('/auth/patient/appointments/', {
+        clinic_id: selectedClinicId,
+        requested_date: new Date(localDateStr).toISOString(),
+        modality,
+        notes
+      });
+      setShowAppointmentModal(false);
+      setModality('');
+      setNotes('');
+      setRequestedDateObj(null);
+      setRequestedTime('');
+      alert('Cita solicitada exitosamente. Verifícala en la sección Mis Citas.');
+    } catch (err) {
+      console.error(err);
+      alert('Error al solicitar la cita');
+    }
+  };
 
   useEffect(() => {
     setClinics(initialClinics);
@@ -1059,6 +1209,43 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
       setMapCenter([initialClinics[0].lat, initialClinics[0].lng]);
     }
   }, [initialClinics]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    setTouchStartY(e.touches[0].clientY);
+    setIsDragging(true);
+    setDragDelta(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (!isDragging || touchStartY === null) return;
+    const currentY = e.touches[0].clientY;
+    setDragDelta(currentY - touchStartY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (touchStartY === null) {
+      setIsDragging(false);
+      return;
+    }
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaY = touchEndY - touchStartY;
+    
+    setIsDragging(false);
+
+    if (deltaY < -40) {
+      setIsSheetExpanded(true); // swiped up
+    } else if (deltaY > 40) {
+      setIsSheetExpanded(false); // swiped down
+    } else if (Math.abs(deltaY) < 5) {
+      setIsSheetExpanded(!isSheetExpanded); // tap
+    }
+    
+    setDragDelta(0);
+    setTouchStartY(null);
+  };
 
   const handleToggleClinic = (clinic: any) => {
     const isCurrentlyExpanded = expandedClinicId === clinic.id;
@@ -1111,12 +1298,13 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
   );
 
   return (
-    <div className="relative w-full h-full animate-fade-in bg-slate-200">
+    <div className="relative w-full flex-1 animate-fade-in bg-slate-200 min-h-[calc(100vh-8rem)] md:min-h-0 md:h-full">
       <div className="absolute inset-0 w-full h-full z-0">
         <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }} zoomControl={false}>
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+            maxZoom={20}
           />
           <MapCenter center={mapCenter} zoom={mapZoom} />
           {clinics.map(clinic => (
@@ -1130,10 +1318,10 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
               }}
             >
               <Popup minWidth={340} maxWidth={440}>
-                <div className="w-[340px] bg-white text-slate-900 overflow-hidden">
-                  <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-3">
+                <div className="w-full bg-white text-slate-900 overflow-hidden">
+                  <div className="px-4 py-3 bg-slate-100 border-b border-slate-200 text-slate-900 flex items-center justify-between gap-3">
                     <h3 className="font-extrabold text-sm tracking-wide m-0 leading-tight flex-1">{clinic.name}</h3>
-                    <div className="inline-flex items-center gap-1 bg-amber-400/15 text-amber-400 border border-amber-400/30 px-2 py-0.5 shrink-0 text-xs">
+                    <div className="inline-flex items-center gap-1 bg-white text-amber-500 border border-slate-200 shadow-sm px-2 py-0.5 shrink-0 text-xs rounded-sm">
                       <span className="material-symbols-outlined text-[13px] leading-none text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                       <span className="font-extrabold leading-none">{clinic.rating || '5.0'}</span>
                     </div>
@@ -1183,16 +1371,36 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
         </MapContainer>
       </div>
 
-      {/* Overlay Panel (Floating Card) */}
-      <div className="absolute top-6 left-6 w-96 max-w-[calc(100%-3rem)] bg-white border border-slate-200 shadow-2xl flex flex-col max-h-[calc(100%-3rem)] z-10">
-        <div className="p-5 border-b border-slate-200 bg-slate-900 text-white">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold tracking-tight">Red de Clínicas AROS</h2>
-            <span className="text-xs px-2 py-0.5 bg-accent text-white font-bold uppercase tracking-wider">
-              {clinics.length} {clinics.length === 1 ? 'Sede' : 'Sedes'}
-            </span>
+      {/* Overlay Panel (Floating Card on Desktop, Bottom Sheet on Mobile) */}
+      <div 
+        className={`absolute md:top-6 md:left-6 md:bottom-auto bottom-0 left-0 w-full md:w-96 md:max-w-[calc(100%-3rem)] bg-white md:border border-t border-slate-200 shadow-2xl flex flex-col md:h-auto md:max-h-[calc(100%-3rem)] z-10 md:rounded-none rounded-t-2xl overflow-hidden h-[60vh] ${isDragging ? '' : 'transition-transform duration-300'} md:transform-none`}
+        style={window.innerWidth < 768 ? { transform: `translateY(${isDragging ? (isSheetExpanded ? Math.max(0, dragDelta) + 'px' : `calc(100% - 96px + ${Math.min(0, dragDelta)}px)`) : (isSheetExpanded ? '0px' : 'calc(100% - 96px)')})` } : {}}
+      >
+        
+        {/* Mobile Handle & Header Area */}
+        <div 
+          className="h-24 md:h-auto bg-slate-100 cursor-pointer md:cursor-default select-none border-b border-slate-200 text-slate-900 flex flex-col justify-center relative touch-none"
+          onClick={() => {
+            if (window.innerWidth < 768) setIsSheetExpanded(!isSheetExpanded);
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Mobile Handle */}
+          <div className="md:hidden w-full flex justify-center pt-2 pb-1 absolute top-0 left-0">
+            <div className="w-12 h-1.5 bg-slate-300 rounded-full"></div>
           </div>
-          <p className="text-xs opacity-80 mt-1">Localiza tu centro de diagnóstico y consulta sus especialidades</p>
+
+          <div className="p-4 md:p-5 pt-5 md:pt-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-extrabold tracking-tight">Red de Clínicas AROS</h2>
+              <span className="text-xs px-2 py-0.5 bg-accent text-white font-bold uppercase tracking-wider">
+                {clinics.length} {clinics.length === 1 ? 'Sede' : 'Sedes'}
+              </span>
+            </div>
+            <p className="text-xs opacity-80 mt-1 text-slate-600">Localiza tu centro de diagnóstico y consulta sus especialidades</p>
+          </div>
         </div>
         
         <div className="p-3 border-b border-slate-200 bg-slate-50">
@@ -1362,6 +1570,13 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
                           Contacto
                         </a>
                       )}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedClinicId(clinic.id); setShowAppointmentModal(true); }}
+                        className="enterprise-btn text-xs py-2 px-3 flex items-center justify-center gap-1.5 font-bold shadow-sm col-span-2 mt-1"
+                      >
+                        <span className="material-symbols-outlined text-sm">calendar_month</span>
+                        Agendar Cita
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1377,6 +1592,102 @@ function ClinicsView({ clinics: initialClinics }: { clinics: any[] }) {
           )}
         </div>
       </div>
+
+      {showAppointmentModal && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[9999] animate-fade-in p-4" style={{ position: 'fixed' }}>
+          <div className="bg-white p-8 w-full max-w-md shadow-2xl relative rounded-none">
+            <button onClick={() => setShowAppointmentModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Agendar Nueva Cita</h2>
+            
+            <form onSubmit={handleRequestAppointment} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5 relative">
+                <label className="text-sm font-semibold text-slate-700">Fecha Preferida</label>
+                <DatePicker
+                  selected={requestedDateObj}
+                  onChange={(date: Date | null) => {
+                    setRequestedDateObj(date);
+                    setRequestedTime('');
+                  }}
+                  minDate={new Date()}
+                  filterDate={(date) => {
+                    const clinic = clinics.find(c => c.id === selectedClinicId);
+                    if (!clinic) return true;
+                    const hours = parseWorkingHours(clinic.opening_hours);
+                    return hours[date.getDay()] !== null;
+                  }}
+                  dateFormat="yyyy-MM-dd"
+                  className="border border-slate-300 p-2 text-sm w-full outline-none z-[1000] rounded-none bg-white"
+                  placeholderText="Seleccione una fecha"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">Hora Preferida</label>
+                <select
+                  value={requestedTime}
+                  onChange={(e) => setRequestedTime(e.target.value)}
+                  className="border border-slate-300 p-2 text-sm outline-none bg-white"
+                  required
+                  disabled={!requestedDateObj}
+                >
+                  <option value="">Seleccione una hora</option>
+                  {(() => {
+                    if (!requestedDateObj) return null;
+                    const clinic = clinics.find(c => c.id === selectedClinicId);
+                    const hoursMap = parseWorkingHours(clinic?.opening_hours || '');
+                    const dayConfig = hoursMap[requestedDateObj.getDay()];
+                    if (!dayConfig) return null;
+                    
+                    const slots = [];
+                    const [openH, openM] = dayConfig.open.split(':').map(Number);
+                    const [closeH, closeM] = dayConfig.close.split(':').map(Number);
+                    
+                    let currentH = openH;
+                    let currentM = openM;
+                    
+                    while (currentH < closeH || (currentH === closeH && currentM <= closeM)) {
+                      const timeStr = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}`;
+                      slots.push(<option key={timeStr} value={timeStr}>{timeStr}</option>);
+                      currentM += 30;
+                      if (currentM >= 60) {
+                        currentM -= 60;
+                        currentH += 1;
+                      }
+                    }
+                    return slots;
+                  })()}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">Modalidad o Estudio (Opcional)</label>
+                <input 
+                  type="text"
+                  value={modality}
+                  onChange={e => setModality(e.target.value)}
+                  placeholder="Ej. Resonancia Magnética"
+                  className="border border-slate-300 p-2 text-sm outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">Notas para la Clínica (Opcional)</label>
+                <textarea 
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  rows={3}
+                  className="border border-slate-300 p-2 text-sm outline-none resize-none"
+                ></textarea>
+              </div>
+
+              <button type="submit" className="enterprise-btn mt-4 py-3">Solicitar Cita</button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1459,7 +1770,7 @@ function DoctorsView({ doctors, fetchDoctors }: { doctors: any[], fetchDoctors: 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredDoctors.map(doctor => (
           <div key={doctor.id} className="enterprise-card p-0 flex flex-col bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-all overflow-hidden">
-            <div className="p-6 flex flex-col items-center text-center border-b border-slate-100 relative bg-slate-50/50">
+            <div className="p-6 flex flex-col items-center text-center border-b border-slate-100 relative bg-slate-50/50 flex-1">
               {doctor.trusted && (
                 <span className="absolute top-4 right-4 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold flex items-center gap-1">
                   <span className="material-symbols-outlined text-xs">verified</span>
@@ -1637,16 +1948,18 @@ function StudyDetailView({ study, setView }: { study: any, setView: (v: ViewStat
               
               <div className="mb-6">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Hallazgos</h4>
-                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-4 border border-slate-200">
-                  {report.findings}
-                </p>
+                <div 
+                  className="text-slate-800 text-sm leading-relaxed bg-slate-50 p-4 border border-slate-200 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: report.findings }}
+                />
               </div>
               
               <div className="p-4 bg-emerald-50/70 border-l-4 border-emerald-600 mb-8">
                 <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">Conclusión Diagnóstica</h4>
-                <p className="text-emerald-950 font-semibold text-sm leading-relaxed">
-                  {report.conclusions}
-                </p>
+                <div 
+                  className="text-emerald-950 font-semibold text-sm leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: report.conclusions }}
+                />
               </div>
               
               <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

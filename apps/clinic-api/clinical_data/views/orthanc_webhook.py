@@ -44,7 +44,7 @@ class OrthancWebhookView(APIView):
             return JsonResponse({"status": "ok", "detail": "No patient/study data in payload"}, status=200)
             
         # Create study record aligned with the Study model fields
-        Study.objects.get_or_create(
+        study, created = Study.objects.get_or_create(
             study_uid=study_uid,
             defaults={
                 "aros_patient_id": patient_id_str,
@@ -54,5 +54,8 @@ class OrthancWebhookView(APIView):
                 "pacs_url": f"{settings.ORTHANC_WADO_URL}/studies/{study_uid}"
             }
         )
+        if created:
+            pass
+
             
         return JsonResponse({"status": "ok"}, status=200)

@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.core.cache import cache
-from .models import User, PatientProfile, ClinicRegistry, PatientDoctorConsent, Roles, ClinicRating, FederationIDMap
+from .models import User, PatientProfile, ClinicRegistry, PatientDoctorConsent, Roles, ClinicRating, FederationIDMap, Appointment
 
 class PatientMeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -103,8 +103,8 @@ class PatientDoctorsView(APIView):
         result = cache.get(cache_key)
         
         if result is None:
-            doctor_roles = Roles.objects.filter(name__in=["Médico Asociado", "Radiólogo"])
-            doctors = User.objects.filter(role__in=doctor_roles).select_related('staff_profile', 'role')
+            doctor_roles = Roles.objects.filter(name__in=["Médico Asociado"])
+            doctors = User.objects.filter(role__in=doctor_roles).select_related('staff_profile', 'role')[:10]
             consents = set(PatientDoctorConsent.objects.filter(patient=request.user, has_consent=True).values_list('doctor_id', flat=True))
             
             result = []
@@ -144,15 +144,26 @@ class PatientDoctorsView(APIView):
             
             if action == 'grant':
                 consent.has_consent = True
+                consent.save()
+                cache.delete(f"patient_doctors_{request.user.id}")
+                # Real-time WebSocket notification to the associate doctor
+                from core.notifications import notify_consent_granted
+                notify_consent_granted(request.user, doctor)
             elif action == 'revoke':
                 consent.has_consent = False
-            
-            consent.save()
-            cache.delete(f"patient_doctors_{request.user.id}")
+                consent.save()
+                cache.delete(f"patient_doctors_{request.user.id}")
+                # Real-time WebSocket notification to the associate doctor
+                from core.notifications import notify_consent_revoked
+                notify_consent_revoked(request.user, doctor)
+            else:
+                consent.save()
+                cache.delete(f"patient_doctors_{request.user.id}")
             
             return JsonResponse({"status": "success", "has_consent": consent.has_consent})
         except User.DoesNotExist:
             return JsonResponse({"error": "Doctor not found"}, status=404)
+
 
 class ClinicsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -179,6 +190,8 @@ class ClinicsView(APIView):
                     "Radiología Digital", "Tomografía (TAC)", "Resonancia Magnética", "Ultrasonido Doppler", "Mastografía"
                 ],
                 "opening_hours": c.opening_hours or "Lun - Vie: 07:00 - 20:00 | Sáb: 08:00 - 15:00",
+                "opening_time": c.opening_time.strftime("%H:%M") if c.opening_time else "07:00",
+                "closing_time": c.closing_time.strftime("%H:%M") if c.closing_time else "20:00",
                 "primary_color": c.primary_color,
                 "lat": c.latitude or (19.4184 - (idx * 0.01)),
                 "lng": c.longitude or (-99.1643 + (idx * 0.01))
@@ -245,5 +258,62 @@ class ClinicRateView(APIView):
             "total_reviews": clinic.total_reviews
         })
 
+class PatientAppointmentsView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        appointments = Appointment.objects.filter(patient=request.user).order_by('-requested_date')
+        result = []
+        for a in appointments:
+            result.append({
+                "id": a.id,
+                "clinic_id": a.clinic.slug,
+                "clinic_name": a.clinic.name,
+                "created_by": a.created_by.email_hash,
+                "modality": a.modality,
+                "requested_date": a.requested_date.isoformat() if a.requested_date else None,
+                "proposed_date": a.proposed_date.isoformat() if a.proposed_date else None,
+                "status": a.status,
+                "notes": a.notes,
+                "clinic_notes": a.clinic_notes
+            })
+        return JsonResponse(result, safe=False)
 
+    def post(self, request):
+        clinic_id = request.data.get('clinic_id')
+        requested_date = request.data.get('requested_date')
+        modality = request.data.get('modality', '')
+        notes = request.data.get('notes', '')
+        
+        try:
+            clinic = ClinicRegistry.objects.get(slug=clinic_id)
+            appointment = Appointment.objects.create(
+                patient=request.user,
+                clinic=clinic,
+                created_by=request.user,
+                requested_date=requested_date,
+                modality=modality,
+                notes=notes
+            )
+            # Notification logic can be triggered here
+            from core.notifications import notify_new_appointment
+            notify_new_appointment(appointment)
+            return JsonResponse({"status": "success", "appointment_id": appointment.id})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+            
+    def put(self, request):
+        appointment_id = request.data.get('appointment_id')
+        action = request.data.get('action') # 'accept' or 'cancel'
+        try:
+            appointment = Appointment.objects.get(id=appointment_id, patient=request.user)
+            if action == 'accept' and appointment.status == 'PROPOSED':
+                appointment.status = 'ACCEPTED'
+                appointment.requested_date = appointment.proposed_date
+                appointment.save()
+            elif action == 'cancel':
+                appointment.status = 'CANCELLED'
+                appointment.save()
+            return JsonResponse({"status": "success", "appointment_status": appointment.status})
+        except Appointment.DoesNotExist:
+            return JsonResponse({"error": "Appointment not found"}, status=404)

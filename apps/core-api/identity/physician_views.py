@@ -53,11 +53,22 @@ class PhysicianStudiesView(APIView):
         
         clinics = list(ClinicRegistry.objects.filter(is_active=True))
         
+        # Pre-fetch federation maps for all consenting patients
+        patient_ids = [c.patient_id for c in consenting_patients]
+        from identity.models import FederationIDMap
+        federation_maps = FederationIDMap.objects.filter(user_id__in=patient_ids)
+        fed_dict = {(f.user_id, f.clinic_id): f.local_patient_id for f in federation_maps}
+        
         async def fetch_patient_studies(p_id):
-            tasks = [ClinicService.get_studies(clinic, str(p_id)) for clinic in clinics]
+            tasks = []
+            for clinic in clinics:
+                local_id = fed_dict.get((p_id, clinic.slug))
+                if local_id:
+                    tasks.append(ClinicService.get_studies(clinic, local_id))
             return await asyncio.gather(*tasks)
 
         all_studies = []
+        seen_uids = set()
         for c in consenting_patients:
             p = c.patient
             prof = getattr(p, 'patient_profile', None)
@@ -67,6 +78,12 @@ class PhysicianStudiesView(APIView):
             for res in results:
                 if res.get("status") == "ok":
                     for st in res.get("data", []):
+                        uid = st.get("study_uid") or st.get("study_instance_uid")
+                        if uid and uid in seen_uids:
+                            continue
+                        if uid:
+                            seen_uids.add(uid)
+
                         all_studies.append({
                             "id": st.get("id_study"),
                             "patient_id": str(p.id),
@@ -106,8 +123,16 @@ class PhysicianStudyDetailView(APIView):
 
         clinics = list(ClinicRegistry.objects.filter(is_active=True))
 
+        from identity.models import FederationIDMap
+        federation_maps = FederationIDMap.objects.filter(user_id__in=consenting_patient_ids)
+        fed_dict = {(f.user_id, f.clinic_id): f.local_patient_id for f in federation_maps}
+
         async def fetch_patient_studies(p_id):
-            tasks = [ClinicService.get_studies(clinic, str(p_id)) for clinic in clinics]
+            tasks = []
+            for clinic in clinics:
+                local_id = fed_dict.get((p_id, clinic.slug))
+                if local_id:
+                    tasks.append(ClinicService.get_studies(clinic, local_id))
             return await asyncio.gather(*tasks)
 
         for p_id in consenting_patient_ids:
@@ -144,3 +169,87 @@ class PhysicianStudyDetailView(APIView):
         return JsonResponse({
             "error": "Acceso no autorizado o estudio no encontrado. Verifique que el paciente mantenga activo el consentimiento médico hacia su cuenta."
         }, status=403)
+
+class PhysicianAppointmentsView(APIView):
+    """
+    Returns appointments for the physician's patients across all clinics.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from identity.models import Appointment, PatientDoctorConsent
+        consenting_patient_ids = PatientDoctorConsent.objects.filter(doctor=request.user, has_consent=True).values_list('patient_id', flat=True)
+        appointments = Appointment.objects.filter(patient_id__in=consenting_patient_ids).order_by('-requested_date')
+        
+        result = []
+        for a in appointments:
+            p_prof = getattr(a.patient, 'patient_profile', None)
+            patient_name = f"{p_prof.first_name} {p_prof.last_name}".strip() if p_prof and (p_prof.first_name or p_prof.last_name) else a.patient.email_hash
+            
+            result.append({
+                "id": a.id,
+                "patient_id": str(a.patient.id),
+                "patient_name": patient_name,
+                "clinic_id": a.clinic.slug,
+                "clinic_name": a.clinic.name,
+                "created_by": a.created_by.email_hash,
+                "modality": a.modality,
+                "requested_date": a.requested_date.isoformat() if a.requested_date else None,
+                "proposed_date": a.proposed_date.isoformat() if a.proposed_date else None,
+                "status": a.status,
+                "notes": a.notes,
+                "clinic_notes": a.clinic_notes
+            })
+        return JsonResponse(result, safe=False)
+
+    def post(self, request):
+        from identity.models import Appointment, PatientDoctorConsent, ClinicRegistry
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        patient_id = request.data.get('patient_id')
+        clinic_id = request.data.get('clinic_id')
+        requested_date = request.data.get('requested_date')
+        modality = request.data.get('modality', '')
+        notes = request.data.get('notes', '')
+        
+        try:
+            if not PatientDoctorConsent.objects.filter(doctor=request.user, patient_id=patient_id, has_consent=True).exists():
+                return JsonResponse({"error": "No tienes consentimiento para agendar una cita para este paciente."}, status=403)
+                
+            clinic = ClinicRegistry.objects.get(slug=clinic_id)
+            patient = User.objects.get(id=patient_id)
+            
+            appointment = Appointment.objects.create(
+                patient=patient,
+                clinic=clinic,
+                created_by=request.user,
+                requested_date=requested_date,
+                modality=modality,
+                notes=notes
+            )
+            from core.notifications import notify_new_appointment
+            notify_new_appointment(appointment)
+            return JsonResponse({"status": "success", "appointment_id": appointment.id})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+            
+    def put(self, request):
+        from identity.models import Appointment, PatientDoctorConsent
+        appointment_id = request.data.get('appointment_id')
+        action = request.data.get('action')
+        try:
+            appointment = Appointment.objects.get(id=appointment_id)
+            if not PatientDoctorConsent.objects.filter(doctor=request.user, patient_id=appointment.patient_id, has_consent=True).exists():
+                return JsonResponse({"error": "No autorizado."}, status=403)
+                
+            if action == 'accept' and appointment.status == 'PROPOSED':
+                appointment.status = 'ACCEPTED'
+                appointment.requested_date = appointment.proposed_date
+                appointment.save()
+            elif action == 'cancel':
+                appointment.status = 'CANCELLED'
+                appointment.save()
+            return JsonResponse({"status": "success", "appointment_status": appointment.status})
+        except Appointment.DoesNotExist:
+            return JsonResponse({"error": "Appointment not found"}, status=404)

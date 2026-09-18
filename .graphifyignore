@@ -1,0 +1,15 @@
+apps/dicom-viewer/
+**/*.bundle.*
+**/*.min.js
+**/*.worker.js
+**/*.wasm
+**/*.css
+**/*.html
+**/*.map
+dist_config*.json
+cf-api-config*.json
+updated_config*.json
+env-task-def*.json
+new-task-def.json
+task-def.json
+.oxlintrc.json

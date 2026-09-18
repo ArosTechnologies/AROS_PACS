@@ -32,27 +32,36 @@ class FederatedStudiesView(APIView):
             # Cache the list for 1 hour
             cache.set('active_clinics_list', clinics, timeout=3600)
         
-        async def fetch_all():
+        # We need to map the clinic to the user's local patient ID
+        federation_maps = FederationIDMap.objects.filter(user=request.user)
+        fed_dict = {f.clinic_id: f.local_patient_id for f in federation_maps}
+        
+        async def fetch_all_mapped():
             tasks = []
             for clinic in clinics:
-                tasks.append(ClinicService.get_studies(clinic, patient_id))
+                local_id = fed_dict.get(clinic.slug)
+                if local_id:
+                    tasks.append(ClinicService.get_studies(clinic, local_id))
             return await asyncio.gather(*tasks)
             
-        results = async_to_sync(fetch_all)()
+        results = async_to_sync(fetch_all_mapped)()
         
-        studies = []
+        studies_dict = {}
         unavailable = []
         for result in results:
             if result.get("status") == "ok":
                 clinic_slug = result["clinic_slug"]
                 for study in result.get("data", []):
                     study["_source_clinic"] = clinic_slug
-                    studies.append(study)
+                    # Deduplicate by study_uid. Keep the first one found.
+                    uid = study.get("study_uid") or study.get("study_instance_uid")
+                    if uid and uid not in studies_dict:
+                        studies_dict[uid] = study
             else:
                 unavailable.append({"clinic": result["clinic_slug"], "reason": result.get("reason")})
                 
         response_data = {
-            "studies": studies,
+            "studies": list(studies_dict.values()),
             "partial_history": len(unavailable) > 0,
             "unavailable_sources": unavailable
         }

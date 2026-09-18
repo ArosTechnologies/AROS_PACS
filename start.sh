@@ -9,6 +9,9 @@
 
 set -e
 
+# Export REDIS_URL to use Redis by default
+export REDIS_URL="redis://localhost:6379/0"
+
 # Project root directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
@@ -43,25 +46,6 @@ print_banner() {
   echo ""
 }
 
-# Cleanup on exit
-cleanup() {
-  echo ""
-  echo -e "${YELLOW}🛑 Shutting down background processes...${NC}"
-  if [ -f "$PID_FILE" ]; then
-    while read -r pid; do
-      if ps -p "$pid" > /dev/null 2>&1; then
-        kill "$pid" 2>/dev/null || true
-      fi
-    done < "$PID_FILE"
-    rm -f "$PID_FILE" "$NAMES_FILE"
-  fi
-  echo -e "${GREEN}✓ All application processes stopped.${NC}"
-  echo -e "${CYAN}Note: Docker containers remain running in background.${NC}"
-  echo -e "${CYAN}To stop Docker containers too, run: ./stop.sh${NC}"
-  exit 0
-}
-
-trap cleanup SIGINT SIGTERM
 
 # Check prerequisites
 check_prerequisites() {
@@ -186,9 +170,17 @@ setup_backends() {
   apps/core-api/.venv/bin/python apps/core-api/manage.py migrate --noinput > "$LOGS_DIR/core-migrate.log" 2>&1
   echo -e "${GREEN}✓ Core API database migrated.${NC}"
 
+  echo -e "${CYAN}Loading demo credentials for Core API...${NC}"
+  apps/core-api/.venv/bin/python apps/core-api/manage.py load_demo_data > "$LOGS_DIR/core-seed.log" 2>&1
+  echo -e "${GREEN}✓ Demo data loaded.${NC}"
+
   echo -e "${CYAN}Applying database migrations for Clinic API...${NC}"
   apps/clinic-api/.venv/bin/python apps/clinic-api/manage.py migrate --noinput > "$LOGS_DIR/clinic-migrate.log" 2>&1
   echo -e "${GREEN}✓ Clinic API database migrated.${NC}"
+
+  echo -e "${CYAN}Syncing demo studies for Clinic API...${NC}"
+  apps/clinic-api/.venv/bin/python apps/clinic-api/manage.py sync_demo_studies > "$LOGS_DIR/clinic-seed.log" 2>&1
+  echo -e "${GREEN}✓ Demo studies synced.${NC}"
 }
 
 # Setup frontend dependencies if needed
@@ -220,12 +212,12 @@ start_apps() {
   echo -e "${BOLD}⚡ Launching Applications & Portals...${NC}"
   rm -f "$PID_FILE" "$NAMES_FILE"
 
-  # 1. Core API (ASGI/Daphne) on Port 8000
+  # 1. Core API (WSGI) on Port 8000
   echo -e "${CYAN}Starting Core API on http://localhost:8000 ...${NC}"
-  (cd apps/core-api && .venv/bin/python -m daphne -v 2 --access-log - -b 0.0.0.0 -p 8000 arosPacs.asgi:application) > "$LOGS_DIR/core-api.log" 2>&1 &
+  (cd apps/core-api && .venv/bin/python manage.py runserver 0.0.0.0:8000) > "$LOGS_DIR/core-api.log" 2>&1 &
   register_pid $! "Core-API"
 
-  # 2. Clinic API (Django REST) on Port 8001
+  # 2. Clinic API (WSGI) on Port 8001
   echo -e "${CYAN}Starting Clinic API on http://localhost:8001 ...${NC}"
   (cd apps/clinic-api && .venv/bin/python manage.py runserver 0.0.0.0:8001) > "$LOGS_DIR/clinic-api.log" 2>&1 &
   register_pid $! "Clinic-API"
@@ -279,27 +271,9 @@ show_dashboard() {
   echo -e "  • ${CYAN}PostgreSQL DB${NC}     : ${BOLD}localhost:5432${NC} (DB: aros_clinic / User: aros_user)"
   echo ""
   echo -e "${YELLOW}📁 Service logs are streaming in: ${NC}${LOGS_DIR}/"
-  echo -e "${YELLOW}⌨️  Press [Ctrl + C] anytime to stop all frontend and backend services.${NC}"
+  echo -e "${YELLOW}⌨️  Run ${BOLD}./stop.sh${NC}${YELLOW} at any time to stop all services.${NC}"
   echo -e "${GREEN}${BOLD}======================================================================${NC}"
   echo ""
-}
-
-# Monitoring loop
-monitor_processes() {
-  declare -A reported_dead
-  while true; do
-    if [ -f "$NAMES_FILE" ]; then
-      while IFS=: read -r pid name; do
-        if ! ps -p "$pid" > /dev/null 2>&1; then
-          if [ -z "${reported_dead[$pid]}" ]; then
-            echo -e "${RED}⚠️ Service '${name}' (PID: $pid) stopped unexpectedly. Check logs in: ${LOGS_DIR}/${NC}"
-            reported_dead[$pid]=1
-          fi
-        fi
-      done < "$NAMES_FILE"
-    fi
-    sleep 3
-  done
 }
 
 # Main Execution
@@ -311,4 +285,3 @@ setup_backends
 setup_frontends
 start_apps
 show_dashboard
-monitor_processes

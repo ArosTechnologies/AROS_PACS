@@ -1,5 +1,6 @@
 import pybreaker
-from gateway.client import http_client, get_clinic_breaker
+from gateway.client import get_clinic_breaker
+import httpx
 from gateway.s2s_auth import generate_s2s_jwt
 
 class ClinicService:
@@ -25,15 +26,15 @@ class ClinicService:
         }
 
         try:
-            # Wrap the httpx request inside the CircuitBreaker
-            @breaker
-            async def do_request():
-                response = await http_client.get(url, headers=headers)
-                response.raise_for_status()
-                return response.json()
-                
-            data = await do_request()
-            return {"clinic_slug": clinic.slug, "status": "ok", "data": data}
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                @breaker
+                async def do_request():
+                    response = await client.get(url, headers=headers)
+                    response.raise_for_status()
+                    return response.json()
+                    
+                data = await do_request()
+                return {"clinic_slug": clinic.slug, "status": "ok", "data": data}
             
         except (pybreaker.CircuitBreakerError, Exception) as e:
             return {"clinic_slug": clinic.slug, "status": "error", "reason": str(e)}
@@ -54,14 +55,45 @@ class ClinicService:
         }
 
         try:
-            @breaker
-            async def do_request():
-                response = await http_client.get(url, headers=headers)
-                response.raise_for_status()
-                return response.json()
-                
-            data = await do_request()
-            return {"status": "ok", "data": data}
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                @breaker
+                async def do_request():
+                    response = await client.get(url, headers=headers)
+                    response.raise_for_status()
+                    return response.json()
+                    
+                data = await do_request()
+                return {"status": "ok", "data": data}
+            
+        except (pybreaker.CircuitBreakerError, Exception) as e:
+            return {"status": "error", "reason": str(e)}
+
+    @staticmethod
+    async def post_report(clinic, payload: dict):
+        """
+        Executes an HTTP POST request to submit a report to the clinic.
+        """
+        breaker = get_clinic_breaker(clinic.slug)
+        s2s_token = generate_s2s_jwt(clinic.slug)
+        
+        base_url = clinic.api_url or "http://localhost:8001"
+        url = f"{base_url}/api/v1/clinical/reports/"
+        
+        headers = {
+            "X-Core-Service-Token": f"Bearer {s2s_token}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                @breaker
+                async def do_request():
+                    response = await client.post(url, headers=headers, json=payload)
+                    response.raise_for_status()
+                    return response.json()
+                    
+                data = await do_request()
+                return {"status": "ok", "data": data}
             
         except (pybreaker.CircuitBreakerError, Exception) as e:
             return {"status": "error", "reason": str(e)}

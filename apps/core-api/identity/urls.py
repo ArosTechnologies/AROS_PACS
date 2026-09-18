@@ -4,8 +4,8 @@ from .views import (
     UserProfileView, ClinicUsersView, ClinicUserDetailView, PatientListView, ClinicConfigView, UserAvatarUploadView
 )
 from .auth_views import PatientRegistrationView, PhysicianRegistrationView, VerifyEmailView
-from .patient_views import PatientMeView, PatientDoctorsView, ClinicsView, ClinicRateView
-from .physician_views import PhysicianPatientsView, PhysicianStudiesView, PhysicianStudyDetailView
+from .patient_views import PatientMeView, PatientDoctorsView, ClinicsView, ClinicRateView, PatientAppointmentsView
+from .physician_views import PhysicianPatientsView, PhysicianStudiesView, PhysicianStudyDetailView, PhysicianAppointmentsView
 
 urlpatterns = [
     path('login/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -24,6 +24,7 @@ urlpatterns = [
     # Patient Portal Specific Endpoints
     path('patient/me/', PatientMeView.as_view(), name='patient_me'),
     path('patient/doctors/', PatientDoctorsView.as_view(), name='patient_doctors'),
+    path('patient/appointments/', PatientAppointmentsView.as_view(), name='patient_appointments'),
     path('clinics/', ClinicsView.as_view(), name='patient_clinics'),
     path('patient/clinics/rate/', ClinicRateView.as_view(), name='patient_clinic_rate'),
 
@@ -31,5 +32,5 @@ urlpatterns = [
     path('physician/patients/', PhysicianPatientsView.as_view(), name='physician_patients'),
     path('physician/studies/', PhysicianStudiesView.as_view(), name='physician_studies'),
     path('physician/studies/<str:study_uid>/', PhysicianStudyDetailView.as_view(), name='physician_study_detail'),
+    path('physician/appointments/', PhysicianAppointmentsView.as_view(), name='physician_appointments'),
 ]
-

@@ -40,16 +40,17 @@ class S2SAuthentication(BaseAuthentication):
             # Extract signing key from the JWKS (fetched lazily)
             signing_key = get_jwks_client().get_signing_key_from_jwt(token)
             
-            # We expect the token to be issued by aros-core and intended for this specific clinic
-            expected_audience = f"clinic-{settings.CLINIC_SLUG}"
-            
             payload = jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
                 issuer="aros-core",
-                audience=expected_audience
+                options={"verify_aud": False}
             )
+            
+            aud = payload.get("aud")
+            if not aud or not aud.startswith("clinic-"):
+                raise AuthenticationFailed("S2S token was not intended for a clinic.")
             
             if payload.get("type") != "s2s":
                 raise AuthenticationFailed("Token is not an S2S token.")

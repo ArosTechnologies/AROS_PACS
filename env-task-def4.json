@@ -1,0 +1,61 @@
+{
+  "containerDefinitions": [
+    {
+      "name": "core-api",
+      "image": "341169624790.dkr.ecr.us-east-1.amazonaws.com/core-api:latest",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "hostPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "DATABASE_URL",
+          "value": "postgres://postgres:DevArosPacsDB123@aros-core-db.ca74io886fcl.us-east-1.rds.amazonaws.com:5432/postgres"
+        },
+        {
+          "name": "SECRET_KEY",
+          "value": "django-insecure-dummy-key"
+        },
+        {
+          "name": "DEBUG",
+          "value": "False"
+        },
+        {
+          "name": "ALLOWED_HOSTS",
+          "value": "*"
+        },
+        {
+          "name": "USE_S3",
+          "value": "False"
+        }
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/aros-core-api",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "systemControls": []
+    }
+  ],
+  "family": "aros-core-api",
+  "taskRoleArn": "arn:aws:iam::341169624790:role/aros-core-ecs-task-role",
+  "executionRoleArn": "arn:aws:iam::341169624790:role/aros-core-ecs-task-execution-role",
+  "networkMode": "awsvpc",
+  "volumes": [],
+  "placementConstraints": [],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "512"
+}

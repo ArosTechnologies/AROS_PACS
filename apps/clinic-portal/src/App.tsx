@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
@@ -8,8 +8,25 @@ import ImageCropper from './components/ImageCropper';
 import LocationPicker from './components/LocationPicker';
 import ScheduleBuilder from './components/ScheduleBuilder';
 import ReportLayoutBuilder from './components/ReportLayoutBuilder';
+import ClinicAgenda from './components/ClinicAgenda';
 
 type ViewState = 'login' | 'dashboard';
+
+const DEFAULT_CLINIC_CONFIG = {
+  name: 'AROS Clinic Portal',
+  primaryColor: '#0f172a',
+  hoverColor: '#334155',
+  logoText: 'AROS',
+  address: 'Portal Seguro de Gestión Clínica',
+  phone: '',
+  email: '',
+  rating: 5.0,
+  latitude: 19.4326,
+  longitude: -99.1332,
+  specialties: [] as string[],
+  openingHours: '',
+  reportLayout: undefined as any
+};
 
 export default function App() {
   const [view, setView] = useState<ViewState>('login');
@@ -19,55 +36,48 @@ export default function App() {
     localStorage.getItem('clinic_user') ? JSON.parse(localStorage.getItem('clinic_user')!) : null
   );
   
-  const [clinicConfig, setClinicConfig] = useState({
-    name: 'Centro AROS Principal',
-    primaryColor: '#0284c7',
-    hoverColor: '#0369a1',
-    logoText: 'CAP',
-    address: 'Av. Insurgentes Sur 123, Roma Norte, Cuauhtémoc, CDMX',
-    phone: '+52 55 5584 9200',
-    email: 'contacto@aros-salud.mx',
-    rating: 4.9,
-    latitude: 19.4184,
-    longitude: -99.1643,
-    specialties: [
-      'Radiología Digital (Rayos X)',
-      'Tomografía Computarizada (TAC)',
-      'Resonancia Magnética (RMN)',
-      'Ultrasonido Diagnóstico y Doppler 4D',
-      'Mastografía Digital',
-      'Densitometría Ósea'
-    ],
-    openingHours: 'Lun - Vie: 07:00 - 20:00 | Sáb: 08:00 - 15:00 | Dom: Cerrado',
-    reportLayout: undefined as any
-  });
+  const [clinicConfig, setClinicConfig] = useState({ ...DEFAULT_CLINIC_CONFIG });
 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fetch real clinic config
-    api.get('/auth/clinic-config/')
-      .then(res => {
-        if (res.data) {
-          setClinicConfig(prev => ({
-            ...prev,
-            name: res.data.name || prev.name,
-            primaryColor: res.data.primary_color || prev.primaryColor,
-            logoText: (res.data.name || prev.name).charAt(0),
-            address: res.data.address || prev.address,
-            phone: res.data.phone || prev.phone,
-            email: res.data.email || prev.email,
-            rating: res.data.rating !== undefined ? res.data.rating : prev.rating,
-            latitude: res.data.latitude !== undefined && res.data.latitude !== null ? res.data.latitude : prev.latitude,
-            longitude: res.data.longitude !== undefined && res.data.longitude !== null ? res.data.longitude : prev.longitude,
-            specialties: res.data.specialties || prev.specialties,
-            openingHours: res.data.opening_hours || prev.openingHours,
-            reportLayout: res.data.report_layout || prev.reportLayout
-          }));
-        }
-      })
-      .catch(console.error);
+  // Toast notification state
+  const [toasts, setToasts] = useState<{id: number; type: string; message: string; icon: string}[]>([]);
+  const toastIdRef = useRef(0);
+
+  const addToast = useCallback((type: string, message: string, icon = 'info') => {
+    const id = ++toastIdRef.current;
+    setToasts(prev => [...prev, { id, type, message, icon }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
   }, []);
+
+
+
+  useEffect(() => {
+    if (token) {
+      // Fetch real clinic config
+      api.get('/auth/clinic-config/')
+        .then(res => {
+          if (res.data) {
+            setClinicConfig(prev => ({
+              ...prev,
+              name: res.data.name || prev.name,
+              primaryColor: res.data.primary_color || prev.primaryColor,
+              logoText: (res.data.name || prev.name).charAt(0),
+              address: res.data.address || prev.address,
+              phone: res.data.phone || prev.phone,
+              email: res.data.email || prev.email,
+              rating: res.data.rating !== undefined ? res.data.rating : prev.rating,
+              latitude: res.data.latitude !== undefined && res.data.latitude !== null ? res.data.latitude : prev.latitude,
+              longitude: res.data.longitude !== undefined && res.data.longitude !== null ? res.data.longitude : prev.longitude,
+              specialties: res.data.specialties || prev.specialties,
+              openingHours: res.data.opening_hours || prev.openingHours,
+              reportLayout: res.data.report_layout || prev.reportLayout
+            }));
+          }
+        })
+        .catch(console.error);
+    }
+  }, [token]);
 
   useEffect(() => {
     // If logged in, fetch fresh profile data
@@ -101,12 +111,14 @@ export default function App() {
   if (role === 'Radiólogo') {
     navItems = [
       { id: 'main', icon: 'list_alt', label: 'Worklist' },
+      { id: 'drafts', icon: 'edit_note', label: 'Borradores' },
       { id: 'reports', icon: 'description', label: 'Mis Reportes' }
     ];
-  } else if (role === 'Asistente Médico') {
+  } else if (role?.includes('Asistente') || role?.includes('Recep')) {
     navItems = [
       { id: 'main', icon: 'desk', label: 'Recepción' },
-      { id: 'patients', icon: 'group', label: 'Pacientes' }
+      { id: 'patients', icon: 'group', label: 'Pacientes' },
+      { id: 'agenda', icon: 'calendar_month', label: 'Agenda' }
     ];
   } else if (role === 'Administrador' || role === 'Superadministrador') {
     navItems = [
@@ -193,11 +205,17 @@ export default function App() {
           </button>
 
           <button 
-            onClick={() => { 
+            onClick={async () => { 
+              try {
+                await api.post('/auth/logout/');
+              } catch (err) {
+                console.error('Logout error:', err);
+              }
               setToken(null); 
               setCurrentUser(null);
               localStorage.removeItem('clinic_token'); 
               localStorage.removeItem('clinic_user');
+              setClinicConfig({ ...DEFAULT_CLINIC_CONFIG });
               setView('login'); 
             }}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all text-xs shadow-sm"
@@ -225,7 +243,7 @@ export default function App() {
           ) : (
             <>
               {role === 'Radiólogo' && <RadiologistView activeTab={activeTab} />}
-              {role === 'Asistente Médico' && <AssistantView activeTab={activeTab} />}
+              {(role?.includes('Asistente') || role?.includes('Recep')) && <AssistantView activeTab={activeTab} clinicConfig={clinicConfig} />}
               {(role === 'Administrador' || role === 'Superadministrador') && (
                 <AdminView 
                   activeTab={activeTab} 
@@ -238,6 +256,33 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {/* Toast Notifications */}
+      <div className="fixed top-20 md:top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" style={{ maxWidth: '380px' }}>
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 shadow-lg border animate-slide-up ${
+              toast.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' :
+              toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
+              'bg-sky-50 border-sky-200 text-sky-900'
+            }`}
+          >
+            <span className={`material-symbols-outlined text-lg mt-0.5 shrink-0 ${
+              toast.type === 'warning' ? 'text-amber-500' :
+              toast.type === 'success' ? 'text-emerald-500' :
+              'text-sky-500'
+            }`}>{toast.icon}</span>
+            <p className="text-sm font-medium leading-snug">{toast.message}</p>
+            <button
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="ml-auto shrink-0 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -341,49 +386,7 @@ function LoginView({ setToken, setView, setCurrentUser, setActiveTab, clinicConf
             </button>
           </form>
 
-          {/* Quick Login Role Selector */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2 text-center">
-              Acceso rápido por rol (Contraseña: <code className="bg-slate-100 px-1 py-0.5 font-mono text-slate-800">password123</code>):
-            </span>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button 
-                type="button" 
-                onClick={() => quickFill('superadmin@clinica.com')}
-                className="text-left px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex flex-col"
-              >
-                <span className="text-xs font-bold text-slate-900">👑 Superadmin</span>
-                <span className="text-[10px] text-slate-500 font-mono truncate">superadmin@clinica.com</span>
-              </button>
 
-              <button 
-                type="button" 
-                onClick={() => quickFill('radiologo@clinica.com')}
-                className="text-left px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex flex-col"
-              >
-                <span className="text-xs font-bold text-slate-900">🩺 Radiólogo</span>
-                <span className="text-[10px] text-slate-500 font-mono truncate">radiologo@clinica.com</span>
-              </button>
-
-              <button 
-                type="button" 
-                onClick={() => quickFill('asistente@clinica.com')}
-                className="text-left px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex flex-col"
-              >
-                <span className="text-xs font-bold text-slate-900">📋 Asistente</span>
-                <span className="text-[10px] text-slate-500 font-mono truncate">asistente@clinica.com</span>
-              </button>
-
-              <button 
-                type="button" 
-                onClick={() => quickFill('admin@clinica.com')}
-                className="text-left px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex flex-col"
-              >
-                <span className="text-xs font-bold text-slate-900">⚙️ Administrador</span>
-                <span className="text-[10px] text-slate-500 font-mono truncate">admin@clinica.com</span>
-              </button>
-            </div>
-          </div>
         </div>
         
         <div className="mt-6 flex items-center justify-center gap-2 animate-slide-up opacity-90">
@@ -766,17 +769,18 @@ function RadiologistView({ activeTab }: { activeTab: string }) {
   
   const fetchStudies = (isSilent = false) => {
     if (!isSilent) setLoading(true);
-    api.get('/clinical_data/studies/')
+    api.get('/clinical/studies/')
       .then(res => {
-        const fetchedStudies = res.data.studies || [];
+        const fetchedStudies = Array.isArray(res.data) ? res.data : (res.data.studies || []);
         const mappedStudies = fetchedStudies.map((s: any, idx: number) => ({
           id: idx,
-          name: s.patient_name || 'Desconocido',
+          name: s.patient_name || 'Paciente Demo',
           dob: s.patient_dob || 'N/A',
           date: s.study_date || 'N/A',
-          study_uid: s.study_instance_uid,
+          study_uid: s.study_uid || s.study_instance_uid,
           modality: s.modality || 'OT',
-          status: 'Pendiente'
+          report_status: s.report?.status,
+          status: s.report?.status === 'COM' ? 'Completado' : (s.report?.status === 'PEN' ? 'Borrador' : 'Pendiente')
         }));
         setPatients(mappedStudies);
         if (!isSilent) setLoading(false);
@@ -790,24 +794,183 @@ function RadiologistView({ activeTab }: { activeTab: string }) {
   useEffect(() => {
     fetchStudies();
     const interval = setInterval(() => fetchStudies(true), 60000); // 60 seconds silent poll
-    return () => clearInterval(interval);
+
+    const handleWs = (e: any) => {
+      const type = e.detail?.type;
+      if (['new_study', 'report_completed', 'report_locked', 'studies_unlocked'].includes(type)) {
+        fetchStudies(true);
+      }
+    };
+    window.addEventListener('clinic_ws_message', handleWs);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('clinic_ws_message', handleWs);
+    };
   }, []);
   
   const [dictatingStudyUid, setDictatingStudyUid] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   if (dictatingStudyUid) {
-    return <DictationScreen studyUid={dictatingStudyUid} onBack={() => setDictatingStudyUid(null)} />;
+    return <DictationScreen studyUid={dictatingStudyUid} onBack={() => { setDictatingStudyUid(null); fetchStudies(true); }} />;
   }
+
+  const lowerQuery = searchQuery.toLowerCase();
+  const filteredPatients = patients.filter(p => 
+    p.name.toLowerCase().includes(lowerQuery) ||
+    p.modality.toLowerCase().includes(lowerQuery) ||
+    p.date.toLowerCase().includes(lowerQuery)
+  );
+
+  const pendingStudies = filteredPatients.filter(p => !p.report_status);
+  const draftStudies = filteredPatients.filter(p => p.report_status === 'PEN');
+  const completedStudies = filteredPatients.filter(p => p.report_status === 'COM');
 
   if (activeTab === 'reports') {
     return (
       <div className="w-full">
-        <h2 className="text-2xl font-bold text-slate-900 mb-8">Mis Reportes</h2>
-        <div className="p-12 text-center flex flex-col items-center justify-center bg-white border border-slate-200">
-          <span className="material-symbols-outlined text-4xl text-slate-400 mb-3">history</span>
-          <h3 className="text-lg font-semibold text-slate-900">Sin reportes recientes</h3>
-          <p className="text-sm text-slate-500">Los estudios dictaminados aparecerán aquí.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Mis Reportes</h2>
+            <p className="text-slate-500 mt-1">Estudios con dictamen finalizado</p>
+          </div>
+          <div className="flex w-full md:w-auto gap-3">
+            <div className="relative flex-1 md:w-64">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg">search</span>
+              <input 
+                type="text" 
+                placeholder="Buscar reporte..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full border border-slate-200 pl-10 pr-3 py-2 bg-white text-slate-900 focus:border-[var(--color-clinic-accent)] outline-none transition-colors" 
+              />
+            </div>
+          </div>
         </div>
+
+        {completedStudies.length === 0 && !loading ? (
+          <div className="p-12 text-center flex flex-col items-center justify-center bg-white border border-slate-200">
+            <span className="material-symbols-outlined text-4xl text-slate-400 mb-3">history</span>
+            <h3 className="text-lg font-semibold text-slate-900">Sin reportes recientes</h3>
+            <p className="text-sm text-slate-500">Los estudios dictaminados aparecerán aquí.</p>
+          </div>
+        ) : (
+          <div className="enterprise-card p-0 overflow-x-auto">
+            <table className="w-full text-left border-collapse whitespace-nowrap">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Estado</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Paciente</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Modalidad</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Fecha Estudio</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {completedStudies.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 text-xs font-bold border bg-blue-50 text-blue-700 border-blue-200">
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-900">{p.name}</td>
+                    <td className="px-6 py-4">
+                      <span className="bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-bold border border-slate-200">
+                        {p.modality}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{p.date}</td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => setDictatingStudyUid(p.study_uid)}
+                        className="enterprise-btn enterprise-btn-secondary py-1.5 px-4 text-sm inline-flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm">visibility</span>
+                        Ver Reporte
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (activeTab === 'drafts') {
+    return (
+      <div className="w-full">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Borradores</h2>
+            <p className="text-slate-500 mt-1">Estudios con dictamen en progreso</p>
+          </div>
+          <div className="flex w-full md:w-auto gap-3">
+            <div className="relative flex-1 md:w-64">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg">search</span>
+              <input 
+                type="text" 
+                placeholder="Buscar borrador..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full border border-slate-200 pl-10 pr-3 py-2 bg-white text-slate-900 focus:border-[var(--color-clinic-accent)] outline-none transition-colors" 
+              />
+            </div>
+          </div>
+        </div>
+
+        {draftStudies.length === 0 && !loading ? (
+          <div className="p-12 text-center flex flex-col items-center justify-center bg-white border border-slate-200">
+            <span className="material-symbols-outlined text-4xl text-slate-400 mb-3">edit_note</span>
+            <h3 className="text-lg font-semibold text-slate-900">Sin borradores activos</h3>
+            <p className="text-sm text-slate-500">Los reportes guardados como borrador aparecerán aquí.</p>
+          </div>
+        ) : (
+          <div className="enterprise-card p-0 overflow-x-auto">
+            <table className="w-full text-left border-collapse whitespace-nowrap">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Estado</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Paciente</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Modalidad</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider">Fecha Estudio</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 uppercase text-xs tracking-wider text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {draftStudies.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200">
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-900">{p.name}</td>
+                    <td className="px-6 py-4">
+                      <span className="bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-bold border border-slate-200">
+                        {p.modality}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{p.date}</td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => setDictatingStudyUid(p.study_uid)}
+                        className="enterprise-btn-secondary py-1.5 px-4 text-sm inline-flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                        Continuar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     );
   }
@@ -826,6 +989,8 @@ function RadiologistView({ activeTab }: { activeTab: string }) {
             <input 
               type="text" 
               placeholder="Buscar estudio..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
               className="w-full border border-slate-200 pl-10 pr-3 py-2 bg-white text-slate-900 focus:border-[var(--color-clinic-accent)] outline-none transition-colors" 
             />
           </div>
@@ -844,10 +1009,10 @@ function RadiologistView({ activeTab }: { activeTab: string }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
-            {patients.map(p => (
+            {pendingStudies.map(p => (
               <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-bold border ${p.status === 'Pendiente' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                  <span className="px-2 py-1 text-xs font-bold border bg-orange-50 text-orange-700 border-orange-200">
                     {p.status}
                   </span>
                 </td>
@@ -869,7 +1034,7 @@ function RadiologistView({ activeTab }: { activeTab: string }) {
                 </td>
               </tr>
             ))}
-            {patients.length === 0 && !loading && (
+            {pendingStudies.length === 0 && !loading && (
               <tr>
                 <td colSpan={5} className="p-8 text-center text-slate-500">No hay estudios pendientes en la worklist.</td>
               </tr>
@@ -884,34 +1049,90 @@ function RadiologistView({ activeTab }: { activeTab: string }) {
 // ----------------------------------------------------------------------
 // ASSISTANT ROLE
 // ----------------------------------------------------------------------
-function AssistantView({ activeTab }: { activeTab: string }) {
+function AssistantView({ activeTab, clinicConfig }: { activeTab: string, clinicConfig: any }) {
   const [patients, setPatients] = useState<any[]>([]);
+  const [patientSearch, setPatientSearch] = useState('');
   const [studyRequests, setStudyRequests] = useState<any[]>([]);
+  const [studies, setStudies] = useState<any[]>([]);
+  
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [patientHistory, setPatientHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const fetchData = () => {
-    api.get('/auth/patients/')
+  const handleViewHistory = (patient: any) => {
+    setSelectedPatient(patient);
+    setLoadingHistory(true);
+    api.get(`/clinical/studies/?patient_id=${patient.patient_id}`)
+      .then(res => {
+        setPatientHistory(res.data.studies || res.data || []);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingHistory(false));
+  };
+
+  const fetchPatients = (q: string = patientSearch) => {
+    api.get(`/auth/patients/?q=${encodeURIComponent(q)}`)
       .then(res => setPatients(res.data.patients || []))
       .catch(console.error);
-    api.get('/clinical_data/study-requests/')
-      .then(res => setStudyRequests(res.data.requests || []))
+  };
+
+  const fetchData = () => {
+    fetchPatients();
+    api.get('/gateway/agenda/')
+      .then(res => setStudyRequests(res.data || []))
+      .catch(console.error);
+    api.get('/clinical/studies/')
+      .then(res => setStudies(res.data.studies || res.data || []))
       .catch(console.error);
   };
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 60000); // 60 seconds background poll
-    return () => clearInterval(interval);
+
+    const handleWs = (e: any) => {
+      const type = e.detail?.type;
+      if (['new_study', 'study_request_created', 'report_completed'].includes(type)) {
+        fetchData();
+      }
+    };
+    window.addEventListener('clinic_ws_message', handleWs);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('clinic_ws_message', handleWs);
+    };
   }, []);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchPatients(patientSearch);
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [patientSearch]);
 
   if (activeTab === 'patients') {
     return (
-      <div className="w-full">
+      <>
+        <div className="w-full">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-slate-900">Directorio de Pacientes</h2>
-          <button onClick={fetchData} className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
-            <span className="material-symbols-outlined text-sm">sync</span>
-            Actualizar
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+              <input
+                type="text"
+                value={patientSearch}
+                onChange={(e) => setPatientSearch(e.target.value)}
+                placeholder="Buscar pacientes..."
+                className="pl-10 pr-4 py-2 border border-slate-300 outline-none text-sm w-64"
+              />
+            </div>
+            <button onClick={() => fetchPatients(patientSearch)} className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+              <span className="material-symbols-outlined text-sm">sync</span>
+              Actualizar
+            </button>
+          </div>
         </div>
         <div className="enterprise-card p-0">
           <ul className="divide-y divide-slate-100">
@@ -924,56 +1145,130 @@ function AssistantView({ activeTab }: { activeTab: string }) {
                     <p className="font-bold text-slate-900">{p.first_name} {p.last_name}</p>
                     <p className="text-sm text-slate-500">CURP / MRN: {p.curp_or_mrn || 'N/A'} • Nacimiento: {p.dob || 'N/A'}</p>
                   </div>
-                  <button className="enterprise-btn-secondary px-4 py-1.5 text-sm">Ver Historial</button>
+                  <button onClick={() => handleViewHistory(p)} className="enterprise-btn-secondary px-4 py-1.5 text-sm">Ver Historial</button>
                 </li>
               ))
             )}
           </ul>
         </div>
       </div>
+      
+      {selectedPatient && createPortal(
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] animate-fade-in p-4">
+          <div className="bg-white p-8 w-full max-w-2xl shadow-2xl relative max-h-[90vh] flex flex-col">
+            <button onClick={() => setSelectedPatient(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Historial Clínico</h2>
+            <p className="text-slate-500 mb-6">Estudios de {selectedPatient.first_name} {selectedPatient.last_name} en esta clínica.</p>
+            
+            <div className="flex-1 overflow-y-auto min-h-[300px]">
+              {loadingHistory ? (
+                <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                  <span className="material-symbols-outlined animate-spin text-3xl mb-2">progress_activity</span>
+                  <p>Cargando historial...</p>
+                </div>
+              ) : patientHistory.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                  <span className="material-symbols-outlined text-4xl mb-2">history_toggle_off</span>
+                  <p>El paciente no tiene estudios previos en esta clínica.</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {patientHistory.map((study, idx) => (
+                    <li key={idx} className="py-4 flex justify-between items-center hover:bg-slate-50 px-2 gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900">{study.modality || 'Estudio General'}</p>
+                        <p className="text-sm text-slate-500 break-all">Fecha: {study.study_date || 'N/A'} • UID: {study.study_uid || study.study_instance_uid || 'N/A'}</p>
+                      </div>
+                      <div className="shrink-0 flex items-center justify-end">
+                        {study.report?.status === 'COM' ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="material-symbols-outlined text-xs">done_all</span> Dictaminado
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-slate-50 text-slate-700 border border-slate-200">
+                            <span className="material-symbols-outlined text-xs">pending</span> Pendiente
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      </>
     );
   }
 
+  if (activeTab === 'agenda') {
+    return <ClinicAgenda openingHours={clinicConfig?.opening_hours || clinicConfig?.openingHours} />;
+  }
+
   // Recepción (Main)
-  const pendingRequests = studyRequests.filter((r: any) => r.status === 'Scheduled');
+  const isTodayLocal = (dateStr?: string) => {
+    if (!dateStr) return false;
+    // For ISO strings that have time (e.g. 2026-09-18T16:00:00Z), new Date() parses to local time
+    // For date-only strings (e.g. 2026-09-18), new Date() parses as UTC midnight, which might shift to previous day local.
+    // To handle both safely:
+    const d = new Date(dateStr);
+    // If dateStr is just 'YYYY-MM-DD', we should treat it as local midnight to avoid timezone shift
+    if (dateStr.length === 10) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const today = new Date();
+      return year === today.getFullYear() && month === today.getMonth() + 1 && day === today.getDate();
+    }
+    const today = new Date();
+    return d.getFullYear() === today.getFullYear() &&
+           d.getMonth() === today.getMonth() &&
+           d.getDate() === today.getDate();
+  };
+
+  const processedToday = studies.filter((s: any) => isTodayLocal(s.study_date)).length;
+  
+  const todaysAgenda = studyRequests.filter((r: any) => isTodayLocal(r.requested_date) || isTodayLocal(r.proposed_date));
+  const waitingPatients = todaysAgenda.filter((r: any) => r.status === 'ACCEPTED' || r.status === 'PENDING').length;
   
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold text-slate-900">Panel de Recepción</h2>
-        <button onClick={fetchData} className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+        <button onClick={fetchData} className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer">
           <span className="material-symbols-outlined text-sm">sync</span>
-          Actualizar
+          <span>Actualizar</span>
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="enterprise-card p-6 flex flex-col justify-between border-l-4 border-l-orange-500">
           <h3 className="text-sm font-bold text-slate-500 uppercase">Pacientes en Espera / Agendados</h3>
-          <p className="text-4xl font-extrabold text-slate-900 mt-2">{pendingRequests.length}</p>
+          <p className="text-4xl font-extrabold text-slate-900 mt-2">{waitingPatients}</p>
         </div>
         <div className="enterprise-card p-6 flex flex-col justify-between border-l-4 border-l-green-500">
-          <h3 className="text-sm font-bold text-slate-500 uppercase">Estudios Procesados Hoy</h3>
-          <p className="text-4xl font-extrabold text-slate-900 mt-2">14</p>
+          <h3 className="text-sm font-bold text-slate-500 uppercase">Estudios Procesados del Día</h3>
+          <p className="text-4xl font-extrabold text-slate-900 mt-2">{processedToday}</p>
         </div>
       </div>
 
       <div className="enterprise-card p-0">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <h3 className="font-bold text-slate-900">Agenda del Día</h3>
-          <button className="text-sm font-bold text-clinic-accent uppercase hover:underline">Ver Todo</button>
         </div>
         <div className="p-6">
           <ul className="divide-y divide-slate-100">
-            {studyRequests.length === 0 ? (
+            {todaysAgenda.length === 0 ? (
               <div className="text-center text-slate-500 py-4">No hay citas agendadas para hoy.</div>
             ) : (
-              studyRequests.map((req, idx) => (
+              todaysAgenda.map((req, idx) => (
                 <li key={idx} className="py-3 flex justify-between items-center">
                   <div>
                     <p className="font-bold text-slate-900">{req.patient_name || 'Paciente'}</p>
-                    <p className="text-xs text-slate-500">{req.study_description} - {req.scheduled_time || 'Sin hora'}</p>
+                    <p className="text-xs text-slate-500">{req.modality} - {req.requested_date ? new Date(req.requested_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Sin hora'}</p>
                   </div>
-                  <button className="enterprise-btn px-4 py-1.5 text-sm">Marcar Llegada</button>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-slate-50 text-slate-700 border border-slate-200 uppercase tracking-wider">{req.status}</span>
                 </li>
               ))
             )}
@@ -1010,6 +1305,7 @@ function AdminView({ activeTab, currentUser, clinicConfig, setClinicConfig }: { 
     }
   };
   const [staff, setStaff] = useState<any[]>([]);
+  const [studies, setStudies] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editUserId, setEditUserId] = useState<string | null>(null);
   const [newStaff, setNewStaff] = useState({ 
@@ -1028,6 +1324,9 @@ function AdminView({ activeTab, currentUser, clinicConfig, setClinicConfig }: { 
   const fetchStaff = () => {
     api.get('/auth/users/')
       .then(res => setStaff(res.data.users || []))
+      .catch(console.error);
+    api.get('/clinical/studies/')
+      .then(res => setStudies(res.data.studies || res.data || []))
       .catch(console.error);
   };
 
@@ -1101,6 +1400,10 @@ function AdminView({ activeTab, currentUser, clinicConfig, setClinicConfig }: { 
   // -------------------------------------------------------------
   // TAB: Personal Médico
   // -------------------------------------------------------------
+  if (activeTab === 'agenda') {
+    return <ClinicAgenda />;
+  }
+
   if (activeTab === 'staff') {
     return (
       <div className="w-full">
@@ -1110,9 +1413,9 @@ function AdminView({ activeTab, currentUser, clinicConfig, setClinicConfig }: { 
             <p className="text-slate-500 mt-1">Directorio médico, cédulas profesionales y gestión de accesos</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={fetchStaff} className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+            <button onClick={fetchStaff} className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer">
               <span className="material-symbols-outlined text-sm">sync</span>
-              Actualizar
+              <span>Actualizar</span>
             </button>
             <button 
               onClick={() => { 
@@ -1669,12 +1972,12 @@ function AdminView({ activeTab, currentUser, clinicConfig, setClinicConfig }: { 
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="enterprise-card p-6 flex flex-col justify-between">
-          <h3 className="text-sm font-bold text-slate-500 uppercase">Estudios Realizados (Mes)</h3>
-          <p className="text-4xl font-extrabold text-slate-900 mt-2">342</p>
+          <h3 className="text-sm font-bold text-slate-500 uppercase">Estudios Realizados</h3>
+          <p className="text-4xl font-extrabold text-slate-900 mt-2">{studies.length}</p>
         </div>
         <div className="enterprise-card p-6 flex flex-col justify-between">
           <h3 className="text-sm font-bold text-slate-500 uppercase">Personal Médico Registrado</h3>
-          <p className="text-4xl font-extrabold text-slate-900 mt-2">12</p>
+          <p className="text-4xl font-extrabold text-slate-900 mt-2">{staff.length}</p>
         </div>
         <div className="enterprise-card p-6 flex flex-col justify-between">
           <h3 className="text-sm font-bold text-slate-500 uppercase">Tiempo Prom. Dictamen</h3>
