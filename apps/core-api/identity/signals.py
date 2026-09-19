@@ -32,13 +32,19 @@ def appointment_updated(sender, instance, created, **kwargs):
             return d.isoformat()
         return str(d)
 
+    is_physician = instance.created_by and hasattr(instance.created_by, 'role') and instance.created_by.role and instance.created_by.role.name == 'Médico Asociado'
+    p_prof = getattr(instance.patient, 'patient_profile', None) if instance.patient else None
+    patient_name = f"{p_prof.first_name} {p_prof.last_name}".strip() if p_prof and (p_prof.first_name or p_prof.last_name) else (instance.patient.email_hash if instance.patient else '')
+
     # Serialize appointment data
     appointment_data = {
         "id": str(instance.id),
         "status": instance.status,
         "patient": str(instance.patient.id) if instance.patient else None,
-        "physician": str(instance.physician.id) if getattr(instance, 'physician', None) else None,
+        "patient_name": patient_name,
+        "physician": str(instance.created_by.id) if is_physician else None,
         "clinic_slug": instance.clinic.slug if getattr(instance, 'clinic', None) else None,
+        "clinic_name": instance.clinic.name if getattr(instance, 'clinic', None) else None,
         "requested_date": format_date(getattr(instance, 'requested_date', None)),
         "proposed_date": format_date(getattr(instance, 'proposed_date', None)),
         "proposed_by": getattr(instance, 'proposed_by', None),

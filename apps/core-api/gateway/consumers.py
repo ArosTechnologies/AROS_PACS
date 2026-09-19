@@ -48,3 +48,17 @@ class NotificationsConsumer(AsyncWebsocketConsumer):
             'type': 'appointment_update',
             'data': payload
         }))
+
+    async def consent_revoked(self, event):
+        payload = event.get('data', {})
+        await self.send(text_data=json.dumps({
+            'type': 'consent_revoked',
+            'data': payload
+        }))
+
+    async def consent_granted(self, event):
+        payload = event.get('data', {})
+        await self.send(text_data=json.dumps({
+            'type': 'consent_granted',
+            'data': payload
+        }))

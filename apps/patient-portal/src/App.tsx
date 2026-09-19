@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 import { api } from './api';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -44,6 +45,30 @@ export default function App() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
   }, []);
 
+  const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
+  useWebSocket(socketUrl, {
+    share: true,
+    onMessage: (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'appointment_update') {
+          const appt = data.data;
+          let msg = `Tu cita en ${appt.clinic_name || 'la clínica'} ha sido actualizada.`;
+          if (appt.status === 'ACCEPTED') msg = `Tu cita en ${appt.clinic_name || 'la clínica'} ha sido confirmada.`;
+          else if (appt.status === 'REJECTED') msg = `Tu cita en ${appt.clinic_name || 'la clínica'} no pudo ser agendada.`;
+          else if (appt.status === 'CANCELLED') msg = `Tu cita en ${appt.clinic_name || 'la clínica'} ha sido cancelada.`;
+          else if (appt.status === 'PROPOSED') {
+             if (appt.proposed_by === 'CLINIC' || appt.proposed_by === 'PHYSICIAN') msg = `${appt.clinic_name || 'La clínica'} ha propuesto un nuevo horario.`;
+             else msg = `Tu propuesta de horario ha sido enviada a ${appt.clinic_name || 'la clínica'}.`;
+          }
+          addToast('info', msg, 'notifications_active');
+        }
+      } catch (err) {
+        console.error('WebSocket Error', err);
+      }
+    }
+  });
+
   const fetchStudies = () => {
     if (token) {
       api.get('/gateway/studies/').then(res => {
@@ -53,8 +78,15 @@ export default function App() {
     }
   };
 
-  const fetchDoctors = () => {
-    if (token) api.get('/auth/patient/doctors/').then(res => setDoctors(res.data)).catch(console.error);
+  const fetchDoctors = async () => {
+    if (token) {
+      try {
+        const res = await api.get('/auth/patient/doctors/');
+        setDoctors(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
   useEffect(() => {
@@ -253,24 +285,24 @@ export default function App() {
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 shadow-lg border animate-slide-up ${
-              toast.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' :
-              toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
-              'bg-sky-50 border-sky-200 text-sky-900'
-            }`}
+            className="pointer-events-auto w-80 bg-white border border-slate-200 shadow-xl rounded-none overflow-hidden flex flex-col animate-slide-up"
           >
-            <span className={`material-symbols-outlined text-lg mt-0.5 shrink-0 ${
-              toast.type === 'warning' ? 'text-amber-500' :
-              toast.type === 'success' ? 'text-emerald-500' :
-              'text-sky-500'
-            }`}>{toast.icon}</span>
-            <p className="text-sm font-medium leading-snug">{toast.message}</p>
-            <button
-              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-              className="ml-auto shrink-0 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-base">close</span>
-            </button>
+            <div className="p-4 flex items-start gap-3">
+              <span className="material-symbols-outlined text-accent">{toast.icon}</span>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-slate-800">Notificación</h4>
+                <p className="text-xs text-slate-600 mt-1">{toast.message}</p>
+              </div>
+              <button 
+                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <span className="material-symbols-outlined text-sm block">close</span>
+              </button>
+            </div>
+            <div className="h-1 bg-slate-100 w-full">
+              <div className="h-full bg-accent animate-[shrink_5s_linear_forwards]"></div>
+            </div>
           </div>
         ))}
       </div>

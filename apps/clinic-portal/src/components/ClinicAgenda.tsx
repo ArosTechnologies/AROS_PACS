@@ -16,34 +16,46 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
   const [proposedTime, setProposedTime] = useState<string>('');
   const [actionReason, setActionReason] = useState<string>('');
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 5000);
-      return () => clearTimeout(timer);
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
     }
-  }, [toastMessage]);
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedAppointments = (appts: any[]) => {
+    if (!sortConfig) return appts;
+    return [...appts].sort((a, b) => {
+      let aVal = a[sortConfig.key] || '';
+      let bVal = b[sortConfig.key] || '';
+      
+      if (sortConfig.key === 'requested_date' || sortConfig.key === 'proposed_date') {
+        aVal = aVal ? new Date(aVal).getTime() : 0;
+        bVal = bVal ? new Date(bVal).getTime() : 0;
+      } else if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
 
   const token = localStorage.getItem('clinic_token');
   const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
 
   useWebSocket(socketUrl, {
+    share: true,
     onMessage: (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'appointment_update') {
           const updatedAppt = data.data;
-          let msg = `Cita actualizada: ${updatedAppt.patient_name || 'Paciente'} (${updatedAppt.status})`;
-          if (updatedAppt.status === 'ACCEPTED') msg = `La cita de ${updatedAppt.patient_name || 'paciente'} ha sido confirmada.`;
-          else if (updatedAppt.status === 'REJECTED') msg = `La cita de ${updatedAppt.patient_name || 'paciente'} ha sido rechazada.`;
-          else if (updatedAppt.status === 'CANCELLED') msg = `El paciente ${updatedAppt.patient_name || ''} ha cancelado su cita.`;
-          else if (updatedAppt.status === 'PROPOSED') {
-            if (updatedAppt.proposed_by === 'PATIENT') msg = `El paciente ${updatedAppt.patient_name || ''} ha propuesto un nuevo horario.`;
-            else msg = `Se ha enviado la propuesta de horario a ${updatedAppt.patient_name || 'paciente'}.`;
-          } else if (updatedAppt.status === 'PENDING') msg = `Cita de ${updatedAppt.patient_name || 'paciente'} movida a pendientes.`;
-          
-          setToastMessage(msg);
           
           setAppointments(prev => {
             const exists = prev.find(a => String(a.id) === String(updatedAppt.id));
@@ -161,16 +173,41 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-sm">
-                  <th className="p-4 font-semibold">Paciente</th>
-                  <th className="p-4 font-semibold">Solicitada Por</th>
-                  <th className="p-4 font-semibold">Fecha Requerida</th>
-                  <th className="p-4 font-semibold">Modalidad / Notas</th>
-                  <th className="p-4 font-semibold text-center">Estatus</th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('patient_name')}>
+                    <div className="flex items-center gap-1">
+                      Paciente
+                      {sortConfig?.key === 'patient_name' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('created_by')}>
+                    <div className="flex items-center gap-1">
+                      Solicitada Por
+                      {sortConfig?.key === 'created_by' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('requested_date')}>
+                    <div className="flex items-center gap-1">
+                      Fecha Requerida
+                      {sortConfig?.key === 'requested_date' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('modality')}>
+                    <div className="flex items-center gap-1">
+                      Modalidad / Notas
+                      {sortConfig?.key === 'modality' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('status')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Estatus
+                      {sortConfig?.key === 'status' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
                   <th className="p-4 font-semibold text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {appointments.filter(a => a.status !== 'CANCELLED' && a.status !== 'REJECTED').map((apt) => (
+                {getSortedAppointments(appointments.filter(a => a.status !== 'CANCELLED' && a.status !== 'REJECTED')).map((apt) => (
                   <tr key={apt.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                     <td className="p-4">
                       <div className="font-semibold text-slate-900">{apt.patient_name}</div>
@@ -336,16 +373,41 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-white text-slate-600 text-sm">
-                  <th className="p-4 font-semibold">Paciente</th>
-                  <th className="p-4 font-semibold">Solicitada Por</th>
-                  <th className="p-4 font-semibold">Fecha Requerida</th>
-                  <th className="p-4 font-semibold">Modalidad / Notas</th>
-                  <th className="p-4 font-semibold text-center">Estatus</th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleSort('patient_name')}>
+                    <div className="flex items-center gap-1">
+                      Paciente
+                      {sortConfig?.key === 'patient_name' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleSort('created_by')}>
+                    <div className="flex items-center gap-1">
+                      Solicitada Por
+                      {sortConfig?.key === 'created_by' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleSort('requested_date')}>
+                    <div className="flex items-center gap-1">
+                      Fecha Requerida
+                      {sortConfig?.key === 'requested_date' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleSort('modality')}>
+                    <div className="flex items-center gap-1">
+                      Modalidad / Notas
+                      {sortConfig?.key === 'modality' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold text-center cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleSort('status')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Estatus
+                      {sortConfig?.key === 'status' && <span className="material-symbols-outlined text-[10px]">{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                    </div>
+                  </th>
                   <th className="p-4 font-semibold text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {appointments.filter(a => a.status === 'CANCELLED' || a.status === 'REJECTED').map((apt) => (
+                {getSortedAppointments(appointments.filter(a => a.status === 'CANCELLED' || a.status === 'REJECTED')).map((apt) => (
                   <tr key={apt.id} className="border-b border-slate-100 last:border-0 bg-white">
                     <td className="p-4">
                       <div className="font-semibold text-slate-700 line-through decoration-slate-300">{apt.patient_name}</div>
@@ -387,23 +449,6 @@ export default function ClinicAgenda({ openingHours = '' }: { openingHours?: str
         </details>
       )}
 
-      {toastMessage && (
-        <div className="fixed top-6 right-6 w-80 bg-white border border-slate-200 shadow-xl rounded z-[9999] overflow-hidden flex flex-col animate-slide-up">
-          <div className="p-4 flex items-start gap-3">
-            <span className="material-symbols-outlined text-indigo-600">notifications_active</span>
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold text-slate-800">Actualización</h4>
-              <p className="text-xs text-slate-600 mt-1">{toastMessage}</p>
-            </div>
-            <button onClick={() => setToastMessage(null)} className="text-slate-400 hover:text-slate-600">
-              <span className="material-symbols-outlined text-sm block">close</span>
-            </button>
-          </div>
-          <div className="h-1 bg-slate-100 w-full">
-            <div className="h-full bg-indigo-500 animate-[shrink_5s_linear_forwards]"></div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

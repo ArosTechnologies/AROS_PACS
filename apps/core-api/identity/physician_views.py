@@ -198,7 +198,8 @@ class PhysicianAppointmentsView(APIView):
                 "proposed_date": a.proposed_date.isoformat() if a.proposed_date else None,
                 "status": a.status,
                 "notes": a.notes,
-                "clinic_notes": a.clinic_notes
+                "clinic_notes": a.clinic_notes,
+                "clinic_opening_hours": getattr(a.clinic, 'opening_hours', '')
             })
         return JsonResponse(result, safe=False)
 
@@ -249,6 +250,16 @@ class PhysicianAppointmentsView(APIView):
                 appointment.save()
             elif action == 'cancel':
                 appointment.status = 'CANCELLED'
+                appointment.save()
+            elif action == 'propose':
+                proposed_date = request.data.get('proposed_date')
+                reason = request.data.get('reason', '')
+                if proposed_date:
+                    appointment.proposed_date = proposed_date
+                appointment.status = 'PROPOSED'
+                appointment.proposed_by = 'PATIENT'
+                if reason:
+                    appointment.notes = reason
                 appointment.save()
             return JsonResponse({"status": "success", "appointment_status": appointment.status})
         except Appointment.DoesNotExist:

@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { api } from '../api';
-import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 
 export default function AppointmentsView({ patients }: { patients: any[] }) {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -11,31 +10,6 @@ export default function AppointmentsView({ patients }: { patients: any[] }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   
-  const token = localStorage.getItem('physician_token');
-  const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
-
-  useWebSocket(socketUrl, {
-    onMessage: (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'appointment_update') {
-          const updatedAppt = data.data;
-          setAppointments(prev => {
-            const exists = prev.find(a => a.id === updatedAppt.id);
-            if (exists) {
-              return prev.map(a => a.id === updatedAppt.id ? { ...a, ...updatedAppt } : a);
-            }
-            return [updatedAppt, ...prev];
-          });
-        }
-      } catch (err) {
-        console.error("Error parsing websocket message", err);
-      }
-    },
-    shouldReconnect: () => true,
-    reconnectInterval: 3000,
-  });
-
   // New appointment form
   const [selectedPatient, setSelectedPatient] = useState('');
   const [selectedClinic, setSelectedClinic] = useState('');
@@ -45,6 +19,19 @@ export default function AppointmentsView({ patients }: { patients: any[] }) {
   const [requestedTime, setRequestedTime] = useState<string>('');
   const [modality, setModality] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Notifications and Reprogramming state
+  const [proposingFor, setProposingFor] = useState<string | null>(null);
+  const [proposedDate, setProposedDate] = useState<Date | null>(new Date());
+  const [proposedTime, setProposedTime] = useState('09:00');
+  const [actionReason, setActionReason] = useState('');
+
+  const [expandedPatientId, setExpandedPatientId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredPatients = patients.filter(p => 
+    (p.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const fetchAppointments = async () => {
     try {
@@ -73,7 +60,23 @@ export default function AppointmentsView({ patients }: { patients: any[] }) {
     
     // Listen for WS updates
     const handleWs = (e: any) => {
-      if (e.detail?.type === 'appointment_status_changed') {
+      const data = e.detail;
+      if (data.type === 'appointment_status_changed') {
+        fetchAppointments();
+      } else if (data.type === 'appointment_update') {
+        const updatedAppt = data.data;
+        setAppointments(prev => {
+          const exists = prev.find(a => String(a.id) === String(updatedAppt.id));
+          if (exists) {
+            return prev.map(a => String(a.id) === String(updatedAppt.id) ? { ...a, ...updatedAppt } : a);
+          }
+          return [updatedAppt, ...prev];
+        });
+      } else if (data.type === 'consent_revoked') {
+        const patientId = data.data.patient_id;
+        setAppointments(prev => prev.filter(a => String(a.patient || a.patient_id) !== String(patientId)));
+        setExpandedPatientId(prev => (prev === String(patientId) ? null : prev));
+      } else if (data.type === 'consent_granted') {
         fetchAppointments();
       }
     };
@@ -107,32 +110,32 @@ export default function AppointmentsView({ patients }: { patients: any[] }) {
       setSelectedClinic('');
       setClinicSearch('');
       fetchAppointments();
-      alert('Cita solicitada exitosamente');
     } catch (err) {
       console.error(err);
-      alert('Error al solicitar la cita');
     }
   };
 
-  const handleAction = async (id: string, action: string) => {
+  const handleAction = async (id: string, action: string, proposedDate?: string, reason?: string) => {
     try {
-      await api.put('/auth/physician/appointments/', { appointment_id: id, action });
+      const payload: any = { appointment_id: id, action };
+      if (proposedDate) {
+        payload.proposed_date = proposedDate;
+      }
+      if (reason) {
+        payload.reason = reason;
+      }
+      await api.put('/auth/physician/appointments/', payload);
       fetchAppointments();
+      setProposingFor(null);
+      setActionReason('');
     } catch (err) {
       console.error(err);
-      alert('Error al actualizar la cita');
     }
   };
 
   const parseWorkingHours = (scheduleStr: string) => {
-    const scheduleMap: Record<number, { open: string, close: string } | null> = {
-      0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null
-    };
-    if (!scheduleStr) {
-      for(let i=1; i<=5; i++) scheduleMap[i] = { open: '07:00', close: '20:00' };
-      scheduleMap[6] = { open: '08:00', close: '15:00' };
-      return scheduleMap;
-    }
+    const scheduleMap: Record<number, { open: string; close: string } | null> = { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+    if (!scheduleStr) return scheduleMap;
     const dayMap: Record<string, number> = { 'dom': 0, 'lun': 1, 'mar': 2, 'mie': 3, 'mié': 3, 'jue': 4, 'vie': 5, 'sab': 6, 'sáb': 6 };
     const parts = scheduleStr.toLowerCase().split('|');
     for (const part of parts) {
@@ -180,72 +183,93 @@ export default function AppointmentsView({ patients }: { patients: any[] }) {
           <h2 className="text-2xl font-bold text-slate-900">Agenda de Pacientes</h2>
           <p className="text-slate-500 mt-1">Gestiona las solicitudes de citas para tus pacientes vinculados.</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)} 
-          className="enterprise-btn py-2 px-4 flex items-center gap-2"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>
-          Agendar Estudio para Paciente
-        </button>
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="w-full md:w-64 relative h-11">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400">search</span>
+            <input 
+              type="text" 
+              placeholder="Buscar paciente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 h-full border border-slate-200 bg-white text-slate-900 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors text-sm font-medium"
+            />
+          </div>
+          <button 
+            onClick={() => setShowModal(true)} 
+            className="enterprise-btn h-11 px-6 flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            Agendar Estudio
+          </button>
+        </div>
       </div>
 
-      <div className="enterprise-card overflow-hidden">
+      <div className="flex flex-col gap-3">
         {loading && appointments.length === 0 ? (
-          <div className="p-10 text-slate-500 text-center">Cargando citas...</div>
-        ) : appointments.length === 0 ? (
-          <div className="p-16 text-center flex flex-col items-center justify-center bg-white">
-            <div className="w-16 h-16 bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
-              <span className="material-symbols-outlined text-3xl">event_busy</span>
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-1">Sin Citas</h3>
-            <p className="text-sm text-slate-500">No hay citas solicitadas para tus pacientes.</p>
+          <div className="p-10 text-slate-500 text-center bg-white border border-slate-200">Cargando citas...</div>
+        ) : filteredPatients.length === 0 ? (
+          <div className="p-12 text-center text-sm text-slate-500 bg-white border border-slate-200 shadow-sm">
+            No se encontraron pacientes.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-sm">
-                  <th className="p-4 font-semibold">Fecha</th>
-                  <th className="p-4 font-semibold">Paciente</th>
-                  <th className="p-4 font-semibold">Clínica</th>
-                  <th className="p-4 font-semibold">Estudio/Modalidad</th>
-                  <th className="p-4 font-semibold">Estatus</th>
-                  <th className="p-4 font-semibold text-right">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.map((apt) => (
-                  <tr key={apt.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                    <td className="p-4 font-medium text-slate-900 whitespace-nowrap">
-                      {new Date(apt.requested_date || apt.proposed_date || '').toLocaleDateString('es-MX', {
-                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </td>
-                    <td className="p-4 font-bold text-slate-900">{apt.patient_name || apt.created_by}</td>
-                    <td className="p-4 text-slate-600 font-medium">{apt.clinic_name}</td>
-                    <td className="p-4 text-slate-600">{apt.modality}</td>
-                    <td className="p-4">
-                      {apt.status === 'PENDING' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-2 py-1"><span className="material-symbols-outlined text-xs">pending</span> Pendiente Clínica</span>}
-                      {apt.status === 'PROPOSED' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1"><span className="material-symbols-outlined text-xs">schedule</span> Clínica Propone Fecha</span>}
-                      {apt.status === 'ACCEPTED' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1"><span className="material-symbols-outlined text-xs">check_circle</span> Confirmada</span>}
-                      {apt.status === 'CANCELLED' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-1"><span className="material-symbols-outlined text-xs">cancel</span> Cancelada</span>}
-                    </td>
-                    <td className="p-4 text-right">
-                      {apt.status === 'PROPOSED' && (
-                        <div className="flex gap-2 justify-end">
-                          <button onClick={() => handleAction(apt.id, 'accept')} className="enterprise-btn py-1 px-3 text-xs bg-emerald-600 border-emerald-700 hover:bg-emerald-700">Aceptar Fecha</button>
-                          <button onClick={() => handleAction(apt.id, 'cancel')} className="enterprise-btn-secondary py-1 px-3 text-xs text-rose-600 hover:bg-rose-50">Cancelar</button>
+          filteredPatients.map(patient => {
+            const isExpanded = expandedPatientId === patient.id;
+            const patientAppointments = appointments.filter(apt => String(apt.patient || apt.patient_id) === String(patient.id));
+            
+            return (
+              <div key={patient.id} className={`border transition-all bg-white ${isExpanded ? 'border-accent shadow-md ring-1 ring-accent/20' : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'}`}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setExpandedPatientId(isExpanded ? null : patient.id)}>
+                   <div>
+                      <h3 className="font-bold text-slate-900">{patient.name}</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">{patientAppointments.length} {patientAppointments.length === 1 ? 'cita programada' : 'citas programadas'}</p>
+                   </div>
+                   <span className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-accent' : ''}`}>expand_more</span>
+                </div>
+                
+                {/* Content */}
+                {isExpanded && (
+                   <div className="border-t border-slate-100 bg-slate-50 overflow-x-auto cursor-default">
+                     {patientAppointments.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-slate-500">
+                          No hay citas agendadas para este paciente.
                         </div>
-                      )}
-                      {(apt.status === 'PENDING' || apt.status === 'ACCEPTED') && (
-                        <button onClick={() => handleAction(apt.id, 'cancel')} className="enterprise-btn-secondary py-1 px-3 text-xs border-rose-200 text-rose-600 hover:bg-rose-50 rounded-none">Cancelar Cita</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                     ) : (
+                       <table className="w-full text-left border-collapse min-w-[700px]">
+                         <thead>
+                           <tr className="border-b border-slate-200 bg-slate-100/50 text-slate-600 text-sm">
+                             <th className="p-4 font-semibold">Fecha</th>
+                             <th className="p-4 font-semibold">Clínica</th>
+                             <th className="p-4 font-semibold">Estudio/Modalidad</th>
+                             <th className="p-4 font-semibold">Estatus</th>
+                           </tr>
+                         </thead>
+                         <tbody>
+                           {patientAppointments.map((apt) => (
+                             <tr key={apt.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors bg-white">
+                               <td className="p-4 font-medium text-slate-900 whitespace-nowrap">
+                                 {new Date(apt.requested_date || apt.proposed_date || '').toLocaleDateString('es-MX', {
+                                   year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                 })}
+                               </td>
+                               <td className="p-4 text-slate-600 font-medium">{apt.clinic_name}</td>
+                               <td className="p-4 text-slate-600">{apt.modality}</td>
+                               <td className="p-4">
+                                 {apt.status === 'PENDING' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-2 py-1"><span className="material-symbols-outlined text-xs">pending</span> Pendiente Clínica</span>}
+                                 {apt.status === 'PROPOSED' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1"><span className="material-symbols-outlined text-xs">schedule</span> Clínica Propone Fecha</span>}
+                                 {apt.status === 'ACCEPTED' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1"><span className="material-symbols-outlined text-xs">check_circle</span> Confirmada</span>}
+                                 {apt.status === 'CANCELLED' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-1"><span className="material-symbols-outlined text-xs">cancel</span> Cancelada</span>}
+                               </td>
+                             </tr>
+                           ))}
+                         </tbody>
+                       </table>
+                     )}
+                   </div>
+                )}
+              </div>
+            )
+          })
         )}
       </div>
 

@@ -8,8 +8,6 @@ export default function AppointmentsView() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
   const parseWorkingHours = (scheduleStr: string) => {
     const scheduleMap: Record<number, { open: string; close: string } | null> = { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
     if (!scheduleStr) return scheduleMap;
@@ -40,32 +38,16 @@ export default function AppointmentsView() {
     return scheduleMap;
   };
 
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [toastMessage]);
-
   const token = localStorage.getItem('patient_token');
   const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
 
   useWebSocket(socketUrl, {
+    share: true,
     onMessage: (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'appointment_update') {
           const updatedAppt = data.data;
-          let msg = `Tu cita fue actualizada a: ${updatedAppt.status}`;
-          if (updatedAppt.status === 'ACCEPTED') msg = `¡Tu cita ha sido confirmada!`;
-          else if (updatedAppt.status === 'REJECTED') msg = `Tu solicitud de cita ha sido rechazada.`;
-          else if (updatedAppt.status === 'CANCELLED') msg = `Tu cita ha sido cancelada.`;
-          else if (updatedAppt.status === 'PROPOSED') {
-             if (updatedAppt.proposed_by === 'CLINIC') msg = `${updatedAppt.clinic_name || 'La clínica'} te ha propuesto un nuevo horario.`;
-             else msg = `Tu propuesta de horario ha sido enviada.`;
-          } else if (updatedAppt.status === 'PENDING') msg = `Tu cita está en revisión.`;
-          
-          setToastMessage(msg);
           setAppointments(prev => {
             const exists = prev.find(a => String(a.id) === String(updatedAppt.id));
             if (exists) {
@@ -337,23 +319,6 @@ export default function AppointmentsView() {
         </details>
       )}
 
-      {toastMessage && (
-        <div className="fixed top-6 right-6 w-80 bg-white border border-slate-200 shadow-xl rounded z-[9999] overflow-hidden flex flex-col animate-slide-up">
-          <div className="p-4 flex items-start gap-3">
-            <span className="material-symbols-outlined text-indigo-600">notifications_active</span>
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold text-slate-800">Notificación</h4>
-              <p className="text-xs text-slate-600 mt-1">{toastMessage}</p>
-            </div>
-            <button onClick={() => setToastMessage(null)} className="text-slate-400 hover:text-slate-600">
-              <span className="material-symbols-outlined text-sm block">close</span>
-            </button>
-          </div>
-          <div className="h-1 bg-slate-100 w-full">
-            <div className="h-full bg-indigo-500 animate-[shrink_5s_linear_forwards]"></div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

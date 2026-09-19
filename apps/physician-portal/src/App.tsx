@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 import { api } from './api';
 import ImageCropper from './components/ImageCropper';
 import AppointmentsView from './components/AppointmentsView';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 
-type ViewState = 'login' | 'home' | 'studies' | 'patients' | 'profile' | 'study_detail' | 'appointments';
+type ViewState = 'login' | 'home' | 'studies' | 'patients' | 'profile' | 'study_detail' | 'appointments' | 'ohif';
 
 export default function App() {
   const [view, setView] = useState<ViewState>('login');
@@ -70,6 +71,43 @@ export default function App() {
   }, []);
 
 
+  const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
+  useWebSocket(socketUrl, {
+    share: true,
+    onMessage: (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'appointment_update') {
+          const appt = data.data;
+          let msg = `La cita de ${appt.patient_name || 'paciente'} ha sido actualizada.`;
+          if (appt.status === 'ACCEPTED') msg = `La cita de ${appt.patient_name || 'paciente'} ha sido confirmada por la clínica.`;
+          else if (appt.status === 'REJECTED') msg = `La cita de ${appt.patient_name || 'paciente'} ha sido rechazada por la clínica.`;
+          else if (appt.status === 'CANCELLED') msg = `La cita de ${appt.patient_name || 'paciente'} ha sido cancelada.`;
+          else if (appt.status === 'PROPOSED') msg = `La clínica ha propuesto un nuevo horario para ${appt.patient_name || 'paciente'}.`;
+          addToast('info', msg, 'notifications_active');
+          window.dispatchEvent(new CustomEvent('physician_ws_message', { detail: data }));
+        } else if (data.type === 'consent_revoked') {
+          const revokedPatientName = data.data.patient_name || 'Un paciente';
+          addToast('warning', `${revokedPatientName} ha revocado tu acceso a su expediente.`, 'gpp_bad');
+          fetchData(true);
+          window.dispatchEvent(new CustomEvent('physician_ws_message', { detail: data }));
+          
+          // Redirect to studies if currently viewing their study
+          if (selectedStudy && String(selectedStudy.patient_id) === String(data.data.patient_id)) {
+             setSelectedStudy(null);
+             setView('studies');
+          }
+        } else if (data.type === 'consent_granted') {
+          const patientName = data.data.patient_name || 'Un paciente';
+          addToast('success', `${patientName} te ha otorgado acceso a su expediente.`, 'verified_user');
+          fetchData(true);
+          window.dispatchEvent(new CustomEvent('physician_ws_message', { detail: data }));
+        }
+      } catch (err) {
+        console.error('WebSocket Error', err);
+      }
+    }
+  });
 
   useEffect(() => {
     if (token) {
@@ -144,7 +182,7 @@ export default function App() {
           
           <button 
             onClick={() => { setView('studies'); setPatientFilter(''); }} 
-            className={`flex items-center gap-3 px-4 py-3 font-medium transition-all duration-200 text-left cursor-pointer ${view === 'studies' || view === 'study_detail' ? 'bg-slate-50 text-accent font-semibold' : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+            className={`flex items-center gap-3 px-4 py-3 font-medium transition-all duration-200 text-left cursor-pointer ${view === 'studies' || view === 'study_detail' || view === 'ohif' ? 'bg-slate-50 text-accent font-semibold' : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
           >
             <span className="material-symbols-outlined text-xl">medical_information</span>
             Estudios Recientes
@@ -219,6 +257,7 @@ export default function App() {
           <div className="p-6 md:p-10 w-full">
             <StudiesView 
               studies={studies} 
+              patients={patients}
               setView={setView} 
               setSelectedStudy={setSelectedStudy} 
               patientFilter={patientFilter}
@@ -233,6 +272,28 @@ export default function App() {
             <PhysicianStudyDetailView 
               study={selectedStudy} 
               setView={setView} 
+            />
+          </div>
+        )}
+        {view === 'ohif' && selectedStudy && (
+          <div className="flex-1 w-full h-full relative bg-black flex flex-col">
+            <div className="h-14 bg-black border-b border-zinc-800 flex items-center px-4 shrink-0">
+              <button 
+                onClick={() => setView('study_detail')} 
+                className="flex items-center gap-2 text-white/80 hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+                <span className="font-medium text-sm">Volver al Detalle</span>
+              </button>
+              <div className="mx-auto text-white/60 text-sm font-medium">
+                {selectedStudy.patient_name} - {selectedStudy.modality}
+              </div>
+            </div>
+            <iframe 
+              src={`http://localhost:3000/viewer/${selectedStudy.study_uid}`} 
+              className="flex-1 w-full h-full border-0"
+              title="OHIF Viewer"
+              allowFullScreen
             />
           </div>
         )}
@@ -294,24 +355,24 @@ export default function App() {
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 shadow-lg border animate-slide-up ${
-              toast.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' :
-              toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
-              'bg-sky-50 border-sky-200 text-sky-900'
-            }`}
+            className="pointer-events-auto w-80 bg-white border border-slate-200 shadow-xl rounded-none overflow-hidden flex flex-col animate-slide-up"
           >
-            <span className={`material-symbols-outlined text-lg mt-0.5 shrink-0 ${
-              toast.type === 'warning' ? 'text-amber-500' :
-              toast.type === 'success' ? 'text-emerald-500' :
-              'text-sky-500'
-            }`}>{toast.icon}</span>
-            <p className="text-sm font-medium leading-snug">{toast.message}</p>
-            <button
-              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-              className="ml-auto shrink-0 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-base">close</span>
-            </button>
+            <div className="p-4 flex items-start gap-3">
+              <span className="material-symbols-outlined text-emerald-500">{toast.icon}</span>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-slate-800">Notificación</h4>
+                <p className="text-xs text-slate-600 mt-1">{toast.message}</p>
+              </div>
+              <button 
+                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <span className="material-symbols-outlined text-sm block">close</span>
+              </button>
+            </div>
+            <div className="h-1 bg-slate-100 w-full">
+              <div className="h-full bg-emerald-500 animate-[shrink_5s_linear_forwards]"></div>
+            </div>
           </div>
         ))}
       </div>
@@ -766,14 +827,6 @@ function PatientsView({
           <h2 className="text-2xl font-bold text-slate-900">Mis Pacientes</h2>
           <p className="text-slate-500 mt-1">Directorio de pacientes que han otorgado consentimiento médico para compartir su expediente e imágenes DICOM.</p>
         </div>
-        <button 
-          onClick={refreshPatients} 
-          disabled={loading}
-          className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer"
-        >
-          <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>sync</span>
-          <span>{loading ? 'Sincronizando...' : 'Actualizar Pacientes'}</span>
-        </button>
       </div>
 
       <div className="enterprise-card p-6 mb-8 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white border border-slate-200 shadow-sm">
@@ -859,6 +912,7 @@ function PatientsView({
 // ----------------------------------------------------------------------
 function StudiesView({ 
   studies, 
+  patients,
   setView, 
   setSelectedStudy, 
   patientFilter, 
@@ -867,6 +921,7 @@ function StudiesView({
   loading 
 }: { 
   studies: any[], 
+  patients: any[],
   setView: (v: ViewState) => void, 
   setSelectedStudy: (s: any) => void, 
   patientFilter: string,
@@ -882,11 +937,16 @@ function StudiesView({
     }
   }, [patientFilter]);
 
-  const filtered = studies.filter(s => 
-    (s.patient_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.study_description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.modality || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.accession_number || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const [expandedPatientId, setExpandedPatientId] = useState<string | null>(patientFilter || null);
+
+  useEffect(() => {
+    if (patientFilter) {
+      setExpandedPatientId(patientFilter);
+    }
+  }, [patientFilter]);
+
+  const filteredPatients = patients.filter(p => 
+    (p.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -896,14 +956,6 @@ function StudiesView({
           <h2 className="text-2xl font-bold text-slate-900">Estudios de Pacientes</h2>
           <p className="text-slate-500 mt-1">Acceda a los reportes diagnósticos y al visor DICOM OHIF de los pacientes que le han otorgado consentimiento.</p>
         </div>
-        <button 
-          onClick={refreshStudies} 
-          disabled={loading}
-          className="enterprise-btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer"
-        >
-          <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>sync</span>
-          <span>{loading ? 'Sincronizando...' : 'Actualizar Estudios'}</span>
-        </button>
       </div>
 
       <div className="enterprise-card p-6 mb-8 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white border border-slate-200 shadow-sm">
@@ -911,11 +963,10 @@ function StudiesView({
           <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400">search</span>
           <input 
             type="text" 
-            placeholder="Buscar por paciente, modalidad (CR, CT, MR) o descripción..."
+            placeholder="Buscar paciente por nombre..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setPatientFilter('');
             }}
             className="w-full pl-12 pr-4 py-3 border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent transition-colors text-sm font-medium"
           />
@@ -924,81 +975,99 @@ function StudiesView({
           <button 
             onClick={() => {
               setSearchTerm('');
-              setPatientFilter('');
             }}
-            className="text-xs text-slate-500 hover:text-slate-800 font-bold underline"
+            className="text-xs text-slate-500 hover:text-slate-800 font-bold underline shrink-0"
           >
             Limpiar filtro
           </button>
         )}
       </div>
 
-      <div className="enterprise-card p-0 overflow-hidden bg-white border border-slate-200 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[750px]">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-xs uppercase tracking-wider font-bold">
-                <th className="p-4">Fecha</th>
-                <th className="p-4">Paciente</th>
-                <th className="p-4">Modalidad</th>
-                <th className="p-4">Descripción del Estudio</th>
-                <th className="p-4">Estado Reporte</th>
-                <th className="p-4 text-right">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((study) => (
-                <tr key={study.id || study.study_uid} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                  <td className="p-4 font-semibold text-slate-900 text-sm whitespace-nowrap">{study.study_date}</td>
-                  <td className="p-4">
-                    <span className="font-bold text-slate-900 text-sm block">{study.patient_name}</span>
-                    <span className="text-xs text-slate-500">{study.patient_email}</span>
-                  </td>
-                  <td className="p-4">
-                    <span className="bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 font-extrabold text-xs">
-                      {study.modality}
-                    </span>
-                  </td>
-                  <td className="p-4 text-slate-700 text-sm font-semibold">{study.study_description}</td>
-                  <td className="p-4">
-                    {study.report ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold">
-                        <span className="material-symbols-outlined text-xs">verified</span>
-                        Reporte Disponible
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs font-medium">
-                        <span className="material-symbols-outlined text-xs">hourglass_empty</span>
-                        Pendiente
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-4 text-right">
-                    <button 
-                      onClick={() => {
-                        setSelectedStudy(study);
-                        setView('study_detail');
-                      }}
-                      className="enterprise-btn inline-flex items-center gap-1.5 py-1.5 px-3.5 text-xs font-bold shadow-sm cursor-pointer"
-                    >
-                      <span>Ver Detalle</span>
-                      <span className="material-symbols-outlined text-sm">visibility</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+      <div className="flex flex-col gap-3 mt-8">
+        {filteredPatients.length === 0 && (
+          <div className="p-12 text-center text-sm text-slate-500 bg-white border border-slate-200 shadow-sm">
+            No se encontraron pacientes que coincidan con la búsqueda.
+          </div>
+        )}
 
-              {filtered.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={6} className="p-12 text-center text-sm text-slate-500">
-                    <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">medical_information</span>
-                    No se encontraron estudios coincidentes.
-                  </td>
-                </tr>
+        {filteredPatients.map(patient => {
+          const isExpanded = expandedPatientId === patient.id;
+          const patientStudies = studies.filter(s => String(s.patient_id) === String(patient.id));
+          
+          return (
+            <div key={patient.id} className={`border transition-all bg-white ${isExpanded ? 'border-accent shadow-md ring-1 ring-accent/20' : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'}`}>
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setExpandedPatientId(isExpanded ? null : patient.id)}>
+                 <div>
+                    <h3 className="font-bold text-slate-900">{patient.name}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{patientStudies.length} {patientStudies.length === 1 ? 'estudio disponible' : 'estudios disponibles'}</p>
+                 </div>
+                 <span className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-accent' : ''}`}>expand_more</span>
+              </div>
+              
+              {/* Content */}
+              {isExpanded && (
+                 <div className="border-t border-slate-100 bg-slate-50 overflow-x-auto cursor-default">
+                   {patientStudies.length === 0 ? (
+                      <div className="p-8 text-center text-sm text-slate-500">
+                        No hay estudios recientes para este paciente.
+                      </div>
+                   ) : (
+                     <table className="w-full text-left border-collapse min-w-[750px]">
+                       <thead>
+                         <tr className="border-b border-slate-200 bg-slate-100/50 text-slate-600 text-xs uppercase tracking-wider font-bold">
+                           <th className="p-4">Fecha</th>
+                           <th className="p-4">Modalidad</th>
+                           <th className="p-4">Descripción del Estudio</th>
+                           <th className="p-4">Estado Reporte</th>
+                           <th className="p-4 text-right">Acción</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         {patientStudies.map((study) => (
+                           <tr key={study.id || study.study_uid} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors bg-white">
+                             <td className="p-4 font-semibold text-slate-900 text-sm whitespace-nowrap">{study.study_date}</td>
+                             <td className="p-4">
+                               <span className="bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 font-extrabold text-xs">
+                                 {study.modality}
+                               </span>
+                             </td>
+                             <td className="p-4 text-slate-700 text-sm font-semibold">{study.study_description}</td>
+                             <td className="p-4">
+                               {study.report ? (
+                                 <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold">
+                                   <span className="material-symbols-outlined text-xs">verified</span>
+                                   Reporte Disponible
+                                 </span>
+                               ) : (
+                                 <span className="inline-flex items-center gap-1 text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs font-medium">
+                                   <span className="material-symbols-outlined text-xs">hourglass_empty</span>
+                                   Pendiente
+                                 </span>
+                               )}
+                             </td>
+                             <td className="p-4 text-right">
+                               <button 
+                                 onClick={() => {
+                                   setSelectedStudy(study);
+                                   setView('study_detail');
+                                 }}
+                                 className="enterprise-btn inline-flex items-center gap-1.5 py-1.5 px-3.5 text-xs font-bold shadow-sm cursor-pointer"
+                               >
+                                 <span>Ver Detalle</span>
+                                 <span className="material-symbols-outlined text-sm">visibility</span>
+                               </button>
+                             </td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   )}
+                 </div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   );
@@ -1160,15 +1229,13 @@ function PhysicianStudyDetailView({ study, setView }: { study: any, setView: (v:
               Abra las series de imágenes en alta resolución con herramientas de medición, contraste Hounsfield (WL/WW), zoom y reconstrucción MPR.
             </p>
           </div>
-          <a 
-            href={`http://localhost:3000/viewer/${study.study_uid}`}
-            target="_blank" 
-            rel="noreferrer"
+          <button 
+            onClick={() => setView('ohif')}
             className="enterprise-btn shrink-0 flex items-center gap-2 px-5 py-2.5 font-bold text-sm shadow-sm cursor-pointer"
           >
             <span>Abrir en OHIF</span>
             <span className="material-symbols-outlined text-sm">open_in_new</span>
-          </a>
+          </button>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 import { createPortal } from 'react-dom';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
@@ -51,6 +52,31 @@ export default function App() {
   }, []);
 
 
+  const socketUrl = token ? `ws://localhost:8000/ws/notifications/?token=${token}` : null;
+  useWebSocket(socketUrl, {
+    share: true,
+    onMessage: (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'appointment_update') {
+          const appt = data.data;
+          let msg = `Cita actualizada: ${appt.patient_name || 'Paciente'} (${appt.status})`;
+          if (appt.status === 'ACCEPTED') msg = `La cita de ${appt.patient_name || 'paciente'} ha sido confirmada.`;
+          else if (appt.status === 'REJECTED') msg = `La cita de ${appt.patient_name || 'paciente'} ha sido rechazada.`;
+          else if (appt.status === 'CANCELLED') msg = `El paciente ${appt.patient_name || ''} ha cancelado su cita.`;
+          else if (appt.status === 'PROPOSED') {
+            if (appt.proposed_by === 'PATIENT') msg = `El paciente ${appt.patient_name || ''} ha propuesto un nuevo horario.`;
+            else msg = `Se ha enviado la propuesta de horario a ${appt.patient_name || 'paciente'}.`;
+          } else if (appt.status === 'PENDING') msg = `Cita de ${appt.patient_name || 'paciente'} movida a pendientes.`;
+          
+          addToast('info', msg, 'notifications_active');
+          window.dispatchEvent(new CustomEvent('clinic_ws_message', { detail: data }));
+        }
+      } catch (err) {
+        console.error('WebSocket Error', err);
+      }
+    }
+  });
 
   useEffect(() => {
     if (token) {
@@ -258,28 +284,28 @@ export default function App() {
       </main>
 
       {/* Toast Notifications */}
-      <div className="fixed top-20 md:top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" style={{ maxWidth: '380px' }}>
+      <div className="fixed top-20 md:top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 shadow-lg border animate-slide-up ${
-              toast.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' :
-              toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
-              'bg-sky-50 border-sky-200 text-sky-900'
-            }`}
+            className="pointer-events-auto w-80 bg-white border border-slate-200 shadow-xl rounded-none overflow-hidden flex flex-col animate-slide-up"
           >
-            <span className={`material-symbols-outlined text-lg mt-0.5 shrink-0 ${
-              toast.type === 'warning' ? 'text-amber-500' :
-              toast.type === 'success' ? 'text-emerald-500' :
-              'text-sky-500'
-            }`}>{toast.icon}</span>
-            <p className="text-sm font-medium leading-snug">{toast.message}</p>
-            <button
-              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-              className="ml-auto shrink-0 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-base">close</span>
-            </button>
+            <div className="p-4 flex items-start gap-3">
+              <span className="material-symbols-outlined text-[var(--color-clinic-accent)]">{toast.icon}</span>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-slate-800">Actualización</h4>
+                <p className="text-xs text-slate-600 mt-1">{toast.message}</p>
+              </div>
+              <button 
+                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <span className="material-symbols-outlined text-sm block">close</span>
+              </button>
+            </div>
+            <div className="h-1 bg-slate-100 w-full">
+              <div className="h-full bg-[var(--color-clinic-accent)] animate-[shrink_5s_linear_forwards]"></div>
+            </div>
           </div>
         ))}
       </div>
@@ -1092,7 +1118,7 @@ function AssistantView({ activeTab, clinicConfig }: { activeTab: string, clinicC
 
     const handleWs = (e: any) => {
       const type = e.detail?.type;
-      if (['new_study', 'study_request_created', 'report_completed'].includes(type)) {
+      if (['new_study', 'study_request_created', 'report_completed', 'appointment_update'].includes(type)) {
         fetchData();
       }
     };
@@ -1216,12 +1242,23 @@ function AssistantView({ activeTab, clinicConfig }: { activeTab: string, clinicC
     // For date-only strings (e.g. 2026-09-18), new Date() parses as UTC midnight, which might shift to previous day local.
     // To handle both safely:
     const d = new Date(dateStr);
+    
+    // If dateStr is DICOM 'YYYYMMDD'
+    if (dateStr.length === 8 && !dateStr.includes('-')) {
+      const year = parseInt(dateStr.substring(0, 4));
+      const month = parseInt(dateStr.substring(4, 6));
+      const day = parseInt(dateStr.substring(6, 8));
+      const today = new Date();
+      return year === today.getFullYear() && month === today.getMonth() + 1 && day === today.getDate();
+    }
+    
     // If dateStr is just 'YYYY-MM-DD', we should treat it as local midnight to avoid timezone shift
     if (dateStr.length === 10) {
       const [year, month, day] = dateStr.split('-').map(Number);
       const today = new Date();
       return year === today.getFullYear() && month === today.getMonth() + 1 && day === today.getDate();
     }
+    
     const today = new Date();
     return d.getFullYear() === today.getFullYear() &&
            d.getMonth() === today.getMonth() &&
@@ -1241,7 +1278,14 @@ function AssistantView({ activeTab, clinicConfig }: { activeTab: string, clinicC
 
   const processedToday = studies.filter((s: any) => isTodayLocal(s.study_date)).length;
   
-  const todaysAgenda = studyRequests.filter((r: any) => isTodayLocal(r.requested_date) || isTodayLocal(r.proposed_date));
+  const todaysAgenda = studyRequests
+    .filter((r: any) => isTodayLocal(r.requested_date) || isTodayLocal(r.proposed_date))
+    .sort((a: any, b: any) => {
+      const dateA = a.proposed_date ? new Date(a.proposed_date) : (a.requested_date ? new Date(a.requested_date) : new Date(0));
+      const dateB = b.proposed_date ? new Date(b.proposed_date) : (b.requested_date ? new Date(b.requested_date) : new Date(0));
+      return dateA.getTime() - dateB.getTime();
+    });
+    
   const waitingPatients = todaysAgenda.filter((r: any) => r.status === 'ACCEPTED' || r.status === 'PENDING').length;
   
   return (

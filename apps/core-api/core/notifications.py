@@ -193,6 +193,9 @@ def notify_consent_revoked(patient, doctor):
     Notify: the associate doctor (instant access removal).
     """
     from identity.models import PatientProfile
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+    
     prof = getattr(patient, 'patient_profile', None)
     patient_name = f"{prof.first_name} {prof.last_name}".strip() if prof and (prof.first_name or prof.last_name) else "Paciente"
 
@@ -200,7 +203,16 @@ def notify_consent_revoked(patient, doctor):
         'patient_id': str(patient.id),
         'patient_name': patient_name,
     }
-    _send_to_group(f'associate_{doctor.id}', 'consent_revoked', f'{patient_name} ha revocado su consentimiento de acceso', data)
+    
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            f'physician_{str(doctor.id)}_agenda',
+            {
+                'type': 'consent_revoked',
+                'data': data
+            }
+        )
 
 
 def notify_consent_granted(patient, doctor):
@@ -216,7 +228,15 @@ def notify_consent_granted(patient, doctor):
         'patient_id': str(patient.id),
         'patient_name': patient_name,
     }
-    _send_to_group(f'associate_{doctor.id}', 'consent_granted', f'{patient_name} le ha otorgado acceso a su expediente clínico', data)
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            f'physician_{str(doctor.id)}_agenda',
+            {
+                'type': 'consent_granted',
+                'data': data
+            }
+        )
 
 def notify_new_appointment(appointment):
     """
