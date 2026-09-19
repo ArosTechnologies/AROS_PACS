@@ -76,22 +76,12 @@ class Command(BaseCommand):
                 patient_counts[patient_id_str] = patient_counts.get(patient_id_str, 0) + 1
                 
                 # Check if it should have a report (from demo data desc)
-                if "Pendiente" not in study_desc and patient_counts[patient_id_str] % 3 != 0:
+                if "Pendiente" not in study_desc:
                     if not study.report:
                         rep = Report.objects.create(
                             status='COM',
                             findings='<p>Se observan estructuras anatómicas dentro de los límites normales. No hay evidencia de lesiones focales o difusas agudas en el estudio actual.</p>',
                             conclusions='<p>Estudio sin alteraciones patológicas significativas.</p>'
-                        )
-                        study.report = rep
-                        study.save()
-                        reports_count += 1
-                else:
-                    if not study.report:
-                        rep = Report.objects.create(
-                            status='PEN',
-                            findings='',
-                            conclusions=''
                         )
                         study.report = rep
                         study.save()

@@ -102,6 +102,10 @@ export default function App() {
           addToast('success', `${patientName} te ha otorgado acceso a su expediente.`, 'verified_user');
           fetchData(true);
           window.dispatchEvent(new CustomEvent('physician_ws_message', { detail: data }));
+        } else if (data.type === 'report_completed') {
+          const patientName = data.data.patient_name || 'un paciente';
+          addToast('info', `El reporte de ${patientName} ha sido completado.`, 'assignment_turned_in');
+          fetchData(true);
         }
       } catch (err) {
         console.error('WebSocket Error', err);
@@ -113,9 +117,8 @@ export default function App() {
     if (token) {
       if (view === 'login') setView('home');
       fetchData();
-      const interval = setInterval(() => fetchData(true), 60000);
-      return () => clearInterval(interval);
     }
+    // WebSockets should handle all realtime updates.
   }, [token]);
 
 
@@ -128,7 +131,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary text-text-primary flex flex-col md:flex-row pt-16 md:pt-0 pb-16 md:pb-0">
+    <div className="min-h-screen md:h-screen bg-secondary text-text-primary flex flex-col md:flex-row pt-16 md:pt-0 pb-16 md:pb-0 md:overflow-hidden">
       {/* Mobile Topbar */}
       <div className="md:hidden fixed top-0 left-0 w-full h-16 bg-accent text-white flex items-center justify-between px-4 z-50 shadow-md">
         <h1 className="text-2xl m-0 flex tracking-tighter leading-none">
@@ -155,7 +158,7 @@ export default function App() {
         </button>
       </div>
       {/* Sidebar */}
-      <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-col z-50 h-full">
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-white flex-col z-50 h-full shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
         <div className="p-8 bg-accent text-white flex justify-between items-start">
           <h1 className="text-4xl m-0 flex flex-col tracking-tighter leading-none">
             <span className="font-extrabold text-slate-900">PORTAL</span>
@@ -206,7 +209,7 @@ export default function App() {
               {doctorProfile.avatar_url ? (
                 <img src={doctorProfile.avatar_url.startsWith('http') ? doctorProfile.avatar_url : `http://localhost:8000${doctorProfile.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <>{doctorProfile.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('') || 'DR'}</>
+                <>{(doctorProfile.name || 'DR').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}</>
               )}
             </div>
             <div className="flex-1 overflow-hidden">
@@ -241,7 +244,7 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 bg-slate-50 animate-fade-in relative flex flex-col h-full overflow-y-auto">
+      <main className={`flex-1 md:ml-72 animate-fade-in relative flex flex-col h-full ${view === 'ohif' ? 'bg-black overflow-hidden' : 'bg-slate-50 overflow-y-auto'}`}>
         {view === 'home' && (
           <div className="p-6 md:p-10 w-full">
             <HomeView 
@@ -276,7 +279,7 @@ export default function App() {
           </div>
         )}
         {view === 'ohif' && selectedStudy && (
-          <div className="flex-1 w-full h-full relative bg-black flex flex-col">
+          <div className="flex-1 w-full flex flex-col bg-black z-10">
             <div className="h-14 bg-black border-b border-zinc-800 flex items-center px-4 shrink-0">
               <button 
                 onClick={() => setView('study_detail')} 
@@ -290,8 +293,8 @@ export default function App() {
               </div>
             </div>
             <iframe 
-              src={`http://localhost:3000/viewer/${selectedStudy.study_uid}`} 
-              className="flex-1 w-full h-full border-0"
+              src={`http://localhost:3000/viewer/${selectedStudy.study_uid || selectedStudy.id}`} 
+              className="flex-1 w-full h-full border-0 block"
               title="OHIF Viewer"
               allowFullScreen
             />
@@ -343,7 +346,7 @@ export default function App() {
               <img src={doctorProfile.avatar_url.startsWith('http') ? doctorProfile.avatar_url : `http://localhost:8000${doctorProfile.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-accent text-white flex items-center justify-center">
-                {doctorProfile.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('') || 'DR'}
+                {(doctorProfile.name || 'DR').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
               </div>
             )}
           </div>

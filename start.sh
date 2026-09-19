@@ -9,6 +9,13 @@
 
 set -e
 
+RESET_DB=false
+for arg in "$@"; do
+  if [ "$arg" == "--reset" ]; then
+    RESET_DB=true
+  fi
+done
+
 # Export REDIS_URL to use Redis by default
 export REDIS_URL="redis://localhost:6379/0"
 
@@ -102,6 +109,14 @@ ensure_docker_running() {
 # Start Docker infrastructure
 start_infra() {
   echo ""
+  if [ "$RESET_DB" = true ]; then
+    echo -e "${RED}${BOLD}🗑️ Wiping Docker volumes and databases (--reset)...${NC}"
+    docker compose -f docker-compose.infra.yml down -v
+    rm -f apps/core-api/db.sqlite3
+    rm -f apps/clinic-api/db.sqlite3
+    echo -e "${GREEN}✓ Volumes and SQLite databases cleared.${NC}"
+  fi
+  
   echo -e "${BOLD}🚀 Starting Infrastructure (Orthanc PACS, PostgreSQL, Redis)...${NC}"
   docker compose -f docker-compose.infra.yml up -d --build
 
@@ -170,9 +185,13 @@ setup_backends() {
   apps/core-api/.venv/bin/python apps/core-api/manage.py migrate --noinput > "$LOGS_DIR/core-migrate.log" 2>&1
   echo -e "${GREEN}✓ Core API database migrated.${NC}"
 
-  echo -e "${CYAN}Loading demo credentials for Core API...${NC}"
-  # apps/core-api/.venv/bin/python apps/core-api/manage.py load_demo_data > "$LOGS_DIR/core-seed.log" 2>&1
-  echo -e "${GREEN}✓ Demo data loaded.${NC}"
+  if [ "$RESET_DB" = true ]; then
+    echo -e "${CYAN}Loading demo credentials for Core API...${NC}"
+    apps/core-api/.venv/bin/python apps/core-api/manage.py load_demo_data > "$LOGS_DIR/core-seed.log" 2>&1
+    echo -e "${GREEN}✓ Demo data loaded.${NC}"
+  else
+    echo -e "${YELLOW}ℹ️ Skipping demo data generation. Use --reset to generate fresh data.${NC}"
+  fi
 
   echo -e "${CYAN}Applying database migrations for Clinic API...${NC}"
   apps/clinic-api/.venv/bin/python apps/clinic-api/manage.py migrate --noinput > "$LOGS_DIR/clinic-migrate.log" 2>&1

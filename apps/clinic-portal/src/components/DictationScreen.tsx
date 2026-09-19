@@ -28,6 +28,12 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
   const [findings, setFindings] = useState('');
   const [conclusions, setConclusions] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({message, type});
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
     // We could fetch a single study if the endpoint supports it, 
@@ -75,11 +81,11 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
         conclusions,
         status
       });
-      alert(`Reporte guardado como ${status}`);
-      onBack();
+      showToast(status === 'PEN' ? 'Borrador guardado exitosamente' : 'Reporte completado exitosamente', 'success');
+      setTimeout(() => onBack(), 1500);
     } catch (err) {
       console.error(err);
-      alert('Error al guardar el reporte');
+      showToast('Error al guardar el reporte', 'error');
     }
   };
 
@@ -209,6 +215,14 @@ export default function DictationScreen({ studyUid, onBack }: DictationScreenPro
           )}
         </div>
       </Split>
+      {toast && (
+        <div className={`fixed top-6 right-6 px-5 py-3 rounded-md shadow-xl flex items-center gap-3 text-white font-medium z-[200] animate-fade-in ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+          <span className="material-symbols-outlined text-xl">
+            {toast.type === 'success' ? 'check_circle' : 'error'}
+          </span>
+          {toast.message}
+        </div>
+      )}
     </div>,
     document.body
   );

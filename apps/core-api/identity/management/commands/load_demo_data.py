@@ -152,23 +152,24 @@ class Command(BaseCommand):
         self.stdout.write(f'Generando 75 estudios a partir de {len(dicom_files)} imágenes base...')
 
         study_configs = []
-        # 5 clínicas * 15 estudios = 75 estudios
-        for clinic in created_clinics:
-            # 10 completados (Reporte)
-            for _ in range(10):
+        norte_clinic = next(c for c in created_clinics if c.slug == 'cdmx-norte')
+
+        # 10 pacientes * 5 estudios = 50 estudios
+        for _, patient in patients:
+            # 1 pendiente (Worklist) en Clínica Norte
+            study_configs.append({
+                'clinic': norte_clinic,
+                'patient': patient,
+                'modality': 'US',
+                'desc': f'Ultrasonido Pendiente - {norte_clinic.name}'
+            })
+            # 4 completados (Reporte) en Clínica Norte
+            for _ in range(4):
                 study_configs.append({
-                    'clinic': clinic,
-                    'patient': random.choice(patients)[1],
+                    'clinic': norte_clinic,
+                    'patient': patient,
                     'modality': 'MR',
-                    'desc': f'Resonancia Magnética - {clinic.name}'
-                })
-            # 5 pendientes (Worklist)
-            for _ in range(5):
-                study_configs.append({
-                    'clinic': clinic,
-                    'patient': random.choice(patients)[1],
-                    'modality': 'US',
-                    'desc': f'Ultrasonido Pendiente - {clinic.name}'
+                    'desc': f'Resonancia Magnética - {norte_clinic.name}'
                 })
 
         total_uploaded = 0
@@ -191,6 +192,11 @@ class Command(BaseCommand):
                     ds.Modality = conf['modality']
                     ds.StudyDescription = conf['desc']
                     ds.InstitutionName = conf['clinic'].name
+
+                    from datetime import datetime
+                    now = datetime.now()
+                    ds.StudyDate = now.strftime("%Y%m%d")
+                    ds.StudyTime = now.strftime("%H%M%S")
 
                     # Ensure we save explicitly to a buffer with the correct transfer syntax
                     if not getattr(ds.file_meta, 'TransferSyntaxUID', None):

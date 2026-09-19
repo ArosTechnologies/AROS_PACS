@@ -102,10 +102,7 @@ api.interceptors.response.use(
         localStorage.removeItem('patient_token');
         localStorage.removeItem('patient_user');
         // Let the application handle the redirect based on the missing token
-        // E.g., a reload or triggering a state change
-        if (window.location.pathname !== '/') {
-            window.location.href = '/'; 
-        }
+        window.location.reload();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

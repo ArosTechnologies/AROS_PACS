@@ -62,7 +62,25 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not email_val:
             raise serializers.ValidationError({'email': 'Este campo es requerido.'})
         attrs['email_hash'] = str(email_val).strip().lower()
-        return super().validate(attrs)
+        
+        data = super().validate(attrs)
+        user = self.user
+
+        request = self.context.get('request')
+        if request:
+            portal = request.headers.get('X-Portal-Type') or request.META.get('HTTP_X_PORTAL_TYPE')
+            
+            if portal == 'patient':
+                if not hasattr(user, 'patient_profile'):
+                    raise serializers.ValidationError({'detail': 'No tienes permisos de paciente para ingresar a este portal.'})
+            elif portal == 'physician':
+                if not hasattr(user, 'staff_profile') or not user.role or user.role.name not in ['Médico Asociado', 'Associate Doctor']:
+                    raise serializers.ValidationError({'detail': 'Esta cuenta no tiene permisos de médico asociado para ingresar a este portal.'})
+            elif portal == 'clinic':
+                if not hasattr(user, 'staff_profile') or not user.staff_profile.clinic:
+                    raise serializers.ValidationError({'detail': 'Esta cuenta no pertenece al personal de ninguna clínica.'})
+
+        return data
 
 def get_portal_cookie_name(request):
     portal = request.headers.get('X-Portal-Type') or request.META.get('HTTP_X_PORTAL_TYPE') or 'default'
@@ -98,21 +116,30 @@ class CookieTokenRefreshView(TokenRefreshView):
         if refresh_token:
             request.data['refresh'] = refresh_token
             
-        response = super().post(request, *args, **kwargs)
-        
-        if response.status_code == 200:
-            new_refresh_token = response.data.get('refresh')
-            if new_refresh_token:
-                response.set_cookie(
-                    cookie_name,
-                    new_refresh_token,
-                    max_age=24 * 60 * 60,
-                    httponly=True,
-                    samesite='Lax',
-                    secure=False,
-                )
-                del response.data['refresh']
-        return response
+        try:
+            response = super().post(request, *args, **kwargs)
+            
+            if response.status_code == 200:
+                new_refresh_token = response.data.get('refresh')
+                if new_refresh_token:
+                    response.set_cookie(
+                        cookie_name,
+                        new_refresh_token,
+                        max_age=24 * 60 * 60,
+                        httponly=True,
+                        samesite='Lax',
+                        secure=False,
+                    )
+                    del response.data['refresh']
+            return response
+        except Exception as e:
+            from django.contrib.auth import get_user_model
+            if isinstance(e, get_user_model().DoesNotExist):
+                response = Response({"detail": "User not found or deleted"}, status=status.HTTP_401_UNAUTHORIZED)
+                response.delete_cookie(cookie_name, samesite='Lax')
+                response.delete_cookie('refresh_token', samesite='Lax')
+                return response
+            raise
 
 class LogoutView(APIView):
     """

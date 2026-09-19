@@ -105,9 +105,9 @@
     "semantic_hash": "ddb8d48376d6837b64b13c58e295021b"
   },
   "apps/clinic-api/clinical_data/views/reports.py": {
-    "mtime": 1789842784.4180827,
-    "ast_hash": "d61c3b99e02192ae0e04a6aba73b0eaf",
-    "semantic_hash": "d61c3b99e02192ae0e04a6aba73b0eaf"
+    "mtime": 1789785312.9969769,
+    "ast_hash": "c2e3abf2ff446c2e7a940c92763ab6e6",
+    "semantic_hash": "c2e3abf2ff446c2e7a940c92763ab6e6"
   },
   "apps/clinic-api/clinical_data/views/studies.py": {
     "mtime": 1789803256.9017324,
@@ -145,9 +145,9 @@
     "semantic_hash": "97f4a92d1ac458a8007edca7f999de13"
   },
   "apps/clinic-portal/src/components/DictationScreen.tsx": {
-    "mtime": 1789842854.9550726,
-    "ast_hash": "b8e4b9457297446a6f0e5f1621d2ef2a",
-    "semantic_hash": "b8e4b9457297446a6f0e5f1621d2ef2a"
+    "mtime": 1789600750.907075,
+    "ast_hash": "0ed63771f13142bd5b7f1e222b8260d8",
+    "semantic_hash": "0ed63771f13142bd5b7f1e222b8260d8"
   },
   "apps/clinic-portal/src/components/ImageCropper.tsx": {
     "mtime": 1788119051.9007995,
@@ -270,9 +270,9 @@
     "semantic_hash": "698a82594e335e7d5ac1d716df7a222d"
   },
   "apps/core-api/core/notifications.py": {
-    "mtime": 1789857453.7914245,
-    "ast_hash": "aab9856351d67633f3febfccdafee6c1",
-    "semantic_hash": "aab9856351d67633f3febfccdafee6c1"
+    "mtime": 1789785330.1074786,
+    "ast_hash": "dde0908086e32774fa05597e69e3af19",
+    "semantic_hash": "dde0908086e32774fa05597e69e3af19"
   },
   "apps/core-api/core/permissions/__init__.py": {
     "mtime": 1788119051.9031334,
@@ -540,9 +540,9 @@
     "semantic_hash": "ddeed8c7d1b555cec04b4470c28414a5"
   },
   "apps/core-api/identity/views.py": {
-    "mtime": 1789859112.475569,
-    "ast_hash": "d881061964e72ecaa9aab60194366100",
-    "semantic_hash": "d881061964e72ecaa9aab60194366100"
+    "mtime": 1789751684.7372475,
+    "ast_hash": "f538b2cfe297db0b6d5b9c827437ce2d",
+    "semantic_hash": "f538b2cfe297db0b6d5b9c827437ce2d"
   },
   "apps/core-api/manage.py": {
     "mtime": 1788119052.0043972,
@@ -570,14 +570,14 @@
     "semantic_hash": "4a47606791303050f7d59737af4f4e93"
   },
   "apps/patient-portal/src/App.tsx": {
-    "mtime": 1789855161.1764004,
-    "ast_hash": "0178f455f686365fff93e1045b304355",
-    "semantic_hash": "0178f455f686365fff93e1045b304355"
+    "mtime": 1789791238.8082201,
+    "ast_hash": "30efac6112a734637840b05636c30fdf",
+    "semantic_hash": "30efac6112a734637840b05636c30fdf"
   },
   "apps/patient-portal/src/api.ts": {
-    "mtime": 1789856169.3717942,
-    "ast_hash": "71ecee3023a1b4cca84ec1596ee32c31",
-    "semantic_hash": "71ecee3023a1b4cca84ec1596ee32c31"
+    "mtime": 1789606712.1516342,
+    "ast_hash": "4808a2c7298cf98bf8c5d190d445b9f4",
+    "semantic_hash": "4808a2c7298cf98bf8c5d190d445b9f4"
   },
   "apps/patient-portal/src/components/DateSelector.tsx": {
     "mtime": 1788119052.0740726,
@@ -625,9 +625,9 @@
     "semantic_hash": "1848a32c0ef236526f92faa9894e912b"
   },
   "apps/physician-portal/src/App.tsx": {
-    "mtime": 1789858603.2414672,
-    "ast_hash": "804de00a77e6742689328147faef94ce",
-    "semantic_hash": "804de00a77e6742689328147faef94ce"
+    "mtime": 1789785363.4871883,
+    "ast_hash": "822489729513d096ea7f9eeea262a123",
+    "semantic_hash": "822489729513d096ea7f9eeea262a123"
   },
   "apps/physician-portal/src/api.ts": {
     "mtime": 1789606719.9244854,
@@ -895,9 +895,9 @@
     "semantic_hash": "30b34763b5cd99df01587b455703bec4"
   },
   "apps/core-api/gateway/views/clinic_worklist.py": {
-    "mtime": 1789856488.1300313,
-    "ast_hash": "b7bb970074b026e89078c3e68c7b7142",
-    "semantic_hash": "b7bb970074b026e89078c3e68c7b7142"
+    "mtime": 1789803375.691859,
+    "ast_hash": "d86f4ab3b09bcde670f52f49c917023e",
+    "semantic_hash": "d86f4ab3b09bcde670f52f49c917023e"
   },
   ".agents/rules/graphify.md": {
     "mtime": 1788119051.8805144,
@@ -1190,9 +1190,9 @@
     "semantic_hash": "3b017fb90c62a7f495fa3ebdfdb420b8"
   },
   "apps/core-api/gateway/consumers.py": {
-    "mtime": 1789855754.323882,
-    "ast_hash": "33e39354ae97cebcca35e05fa7d29071",
-    "semantic_hash": "33e39354ae97cebcca35e05fa7d29071"
+    "mtime": 1789785338.0100834,
+    "ast_hash": "61a083927adcf8d2314e8d27bc9f432f",
+    "semantic_hash": "61a083927adcf8d2314e8d27bc9f432f"
   },
   "apps/core-api/gateway/middleware.py": {
     "mtime": 1789755196.7037475,

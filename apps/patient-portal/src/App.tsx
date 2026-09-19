@@ -20,7 +20,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-type ViewState = 'login' | 'home' | 'studies' | 'profile' | 'clinics' | 'doctors' | 'study_detail' | 'appointments';
+type ViewState = 'login' | 'home' | 'studies' | 'profile' | 'clinics' | 'doctors' | 'study_detail' | 'appointments' | 'ohif';
 
 export default function App() {
   const [view, setView] = useState<ViewState>('login');
@@ -62,6 +62,9 @@ export default function App() {
              else msg = `Tu propuesta de horario ha sido enviada a ${appt.clinic_name || 'la clínica'}.`;
           }
           addToast('info', msg, 'notifications_active');
+        } else if (data.type === 'report_completed') {
+          addToast('success', `Tu estudio en ${data.data.clinic_name || 'la clínica'} ya ha sido dictaminado.`, 'assignment_turned_in');
+          fetchStudies();
         }
       } catch (err) {
         console.error('WebSocket Error', err);
@@ -145,7 +148,7 @@ export default function App() {
         </button>
       </div>
       {/* Sidebar (Desktop Only) */}
-      <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-col z-50 h-full">
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-white flex-col z-50 h-full">
         <div className="p-8 bg-accent text-white flex justify-between items-start">
           <h1 className="text-4xl m-0 flex flex-col tracking-tighter leading-none">
             <span className="font-extrabold text-slate-900">MEDI</span>
@@ -240,10 +243,32 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 bg-slate-50 animate-fade-in relative flex flex-col h-full overflow-y-auto">
+      <main className={`flex-1 md:ml-72 animate-fade-in relative flex flex-col h-full ${view === 'ohif' ? 'bg-black overflow-hidden' : 'bg-slate-50 overflow-y-auto'}`}>
         {view === 'home' && <div className="p-6 md:p-10 w-full"><HomeView setView={setView} patient={patient} studies={studies} doctors={doctors} /></div>}
         {view === 'studies' && <div className="p-6 md:p-10 w-full"><DashboardView setView={setView} setSelectedStudy={setSelectedStudy} studies={studies} partialHistory={partialHistory} /></div>}
         {view === 'study_detail' && <div className="p-6 md:p-10 w-full"><StudyDetailView study={selectedStudy} setView={setView} /></div>}
+        {view === 'ohif' && selectedStudy && (
+          <div className="flex-1 w-full flex flex-col bg-black z-10">
+            <div className="h-14 bg-black border-b border-zinc-800 flex items-center px-4 shrink-0">
+              <button 
+                onClick={() => setView('study_detail')} 
+                className="flex items-center gap-2 text-white/80 hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+                <span className="font-medium text-sm">Volver al Detalle</span>
+              </button>
+              <div className="mx-auto text-white/60 text-sm font-medium">
+                {patient?.name} - {selectedStudy.modality}
+              </div>
+            </div>
+            <iframe 
+              src={`http://localhost:3000/viewer/${selectedStudy.study_uid || selectedStudy.id}`} 
+              className="flex-1 w-full h-full border-0 block"
+              title="OHIF Viewer"
+              allowFullScreen
+            />
+          </div>
+        )}
         {view === 'profile' && <div className="p-6 md:p-10 w-full"><ProfileView patient={patient} setPatient={setPatient} /></div>}
         {view === 'doctors' && <div className="p-6 md:p-10 w-full"><DoctorsView doctors={doctors} fetchDoctors={fetchDoctors} /></div>}
         {view === 'clinics' && <ClinicsView clinics={clinics} />}
@@ -650,8 +675,8 @@ function DashboardView({ setView, setSelectedStudy, studies, partialHistory }: {
     
     // Custom handling for status which is derived from report
     if (sortConfig.key === 'status') {
-      aVal = a.report ? 'Reporte Final' : 'Pendiente';
-      bVal = b.report ? 'Reporte Final' : 'Pendiente';
+      aVal = a.report && a.report.status === 'COM' ? 'Reporte Final' : 'Pendiente';
+      bVal = b.report && b.report.status === 'COM' ? 'Reporte Final' : 'Pendiente';
     }
 
     if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -727,7 +752,7 @@ function DashboardView({ setView, setSelectedStudy, studies, partialHistory }: {
                     </td>
                     <td className="p-4 text-slate-600">{study.study_description || 'Sin descripción'}</td>
                     <td className="p-4 text-center">
-                      {study.report ? (
+                      {study.report && study.report.status === 'COM' ? (
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-1"><span className="material-symbols-outlined text-xs">description</span> Reporte Final</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-2 py-1"><span className="material-symbols-outlined text-xs">pending</span> Pendiente</span>
@@ -1937,15 +1962,13 @@ function StudyDetailView({ study, setView }: { study: any, setView: (v: ViewStat
             <p className="text-slate-500 max-w-lg mb-6 text-sm">
               Las imágenes de su estudio han sido transferidas al PACS de forma segura. El médico radiólogo se encuentra elaborando el dictamen final. Puede abrir el visor DICOM para ver sus imágenes directamente.
             </p>
-            <a 
-              href={`http://localhost:3000/viewer/${studyUid}`}
-              target="_blank" 
-              rel="noreferrer"
+            <button 
+              onClick={() => setView('ohif')}
               className="enterprise-btn flex items-center gap-2 px-6 py-2.5 font-bold text-sm shadow-sm cursor-pointer"
             >
               <span>Abrir Imágenes en Visor OHIF</span>
               <span className="material-symbols-outlined text-sm">open_in_new</span>
-            </a>
+            </button>
           </div>
         </div>
       ) : (
@@ -2018,15 +2041,13 @@ function StudyDetailView({ study, setView }: { study: any, setView: (v: ViewStat
               </h4>
               <p className="text-sm text-slate-500 mt-1">Acceda al visor OHIF de grado radiológico para inspeccionar cortes, aplicar filtros y mediciones.</p>
             </div>
-            <a 
-              href={`http://localhost:3000/viewer/${studyUid}`}
-              target="_blank" 
-              rel="noreferrer"
+            <button 
+              onClick={() => setView('ohif')}
               className="enterprise-btn shrink-0 flex items-center gap-2 px-5 py-2.5 font-bold text-sm shadow-sm cursor-pointer"
             >
               <span>Abrir en OHIF</span>
               <span className="material-symbols-outlined text-sm">open_in_new</span>
-            </a>
+            </button>
           </div>
         </div>
       )}

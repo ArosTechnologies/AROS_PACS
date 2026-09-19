@@ -7,19 +7,16 @@ from asgiref.sync import async_to_sync
 
 
 def _send_to_group(group_name, notification_type, message, data=None):
-    """Send a notification to a channel group (Disabled as websockets are removed)."""
-    # channel_layer = get_channel_layer()
-    # if channel_layer:
-    #     async_to_sync(channel_layer.group_send)(
-    #         group_name,
-    #         {
-    #             'type': 'send_notification',
-    #             'notification_type': notification_type,
-    #             'message': message,
-    #             'data': data or {},
-    #         }
-    #     )
-    pass
+    """Send a notification to a channel group."""
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                'type': notification_type,
+                'data': data or {},
+            }
+        )
 
 
 def notify_new_study(study):
@@ -43,8 +40,9 @@ def notify_new_study(study):
     _send_to_group(f'patient_{patient_user_id}', 'new_study', 'Tu estudio está disponible', data)
 
     # Associated doctors for this patient
-    for doctor in study.id_patient.associated_doctors.all():
-        _send_to_group(f'associate_{doctor.user.id}', 'new_study', 'Nuevo estudio de paciente disponible', data)
+    from identity.models import PatientDoctorConsent
+    for consent in PatientDoctorConsent.objects.filter(patient=study.id_patient.user, has_consent=True):
+        _send_to_group(f'associate_{consent.doctor.id}', 'new_study', 'Nuevo estudio de paciente disponible', data)
 
 
 def notify_report_completed(report, study):
@@ -66,11 +64,63 @@ def notify_report_completed(report, study):
     _send_to_group('assistant_all', 'report_completed', 'Reporte completado', data)
 
     # Associated doctors
-    for doctor in study.id_patient.associated_doctors.all():
-        _send_to_group(f'associate_{doctor.user.id}', 'report_completed', 'Reporte de paciente disponible', data)
+    from identity.models import PatientDoctorConsent
+    for consent in PatientDoctorConsent.objects.filter(patient=study.id_patient.user, has_consent=True):
+        _send_to_group(f'associate_{consent.doctor.id}', 'report_completed', 'Reporte de paciente disponible', data)
 
     # All doctors — update their lists
     _send_to_group('doctors_all', 'report_completed', 'Reporte completado', data)
+
+
+def notify_federated_report_completed(clinic, local_patient_id, patient_name):
+    """
+    A report was completed in a federated clinic for a specific local_patient_id.
+    We look up the global user and notify them and their associated doctors.
+    """
+    from identity.models import FederationIDMap
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+    from django.core.cache import cache
+    
+    try:
+        fed_map = FederationIDMap.objects.get(clinic=clinic, local_patient_id=local_patient_id)
+        user = fed_map.user
+        
+        # Invalidate the gateway studies cache for this patient
+        cache.delete(f"gateway_studies_{user.id}")
+        
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            return
+
+        ws_data = {
+            'type': 'report_completed',
+            'data': {
+                'patient_name': patient_name,
+                'clinic_name': clinic.name
+            }
+        }
+
+        # Notify patient
+        async_to_sync(channel_layer.group_send)(
+            f'patient_{user.id}_agenda',
+            ws_data
+        )
+
+        # Notify associated doctors
+        try:
+            from identity.models import PatientDoctorConsent
+            consents = PatientDoctorConsent.objects.filter(patient=user, has_consent=True)
+            for consent in consents:
+                async_to_sync(channel_layer.group_send)(
+                    f'physician_{consent.doctor.id}_agenda',
+                    ws_data
+                )
+        except Exception as e:
+            print(f"Error notifying doctors: {e}")
+
+    except FederationIDMap.DoesNotExist:
+        pass
 
 
 def notify_study_request_created(study_request):
@@ -104,8 +154,9 @@ def notify_report_locked(study, doctor):
     _send_to_group(f'patient_{patient_user_id}', 'report_locked', 'Tu estudio está siendo revisado', data)
 
     # Notify associate doctors
-    for assoc in study.id_patient.associated_doctors.all():
-        _send_to_group(f'associate_{assoc.user.id}', 'report_locked', 'Un estudio está siendo revisado', data)
+    from identity.models import PatientDoctorConsent
+    for consent in PatientDoctorConsent.objects.filter(patient=study.id_patient.user, has_consent=True):
+        _send_to_group(f'associate_{consent.doctor.id}', 'report_locked', 'Un estudio está siendo revisado', data)
 
 
 def notify_studies_unlocked(study_ids, doctor, patient_user_ids=None):
@@ -183,8 +234,9 @@ def notify_images_available(study):
     _send_to_group(f'patient_{patient_user_id}', 'images_available', 'Las imágenes de tu estudio están disponibles', data)
 
     # Associated doctors for this patient
-    for doctor in study.id_patient.associated_doctors.all():
-        _send_to_group(f'associate_{doctor.user.id}', 'images_available', 'Imágenes de estudio de paciente disponibles', data)
+    from identity.models import PatientDoctorConsent
+    for consent in PatientDoctorConsent.objects.filter(patient=study.id_patient.user, has_consent=True):
+        _send_to_group(f'associate_{consent.doctor.id}', 'images_available', 'Imágenes de estudio de paciente disponibles', data)
 
 
 def notify_consent_revoked(patient, doctor):

@@ -49,7 +49,8 @@ class ClinicalStudiesView(APIView):
                 "study_description": s.study_description,
                 "modality": s.modality,
                 "pacs_url": s.pacs_url,
-                "report": report_data
+                "report": report_data,
+                "aros_patient_id": s.aros_patient_id
             })
             
         cache.set(cache_key, data, timeout=300)
@@ -89,6 +90,7 @@ class ClinicalStudyDetailView(APIView):
             "study_description": s.study_description,
             "modality": s.modality,
             "pacs_url": s.pacs_url,
-            "report": report_data
+            "report": report_data,
+            "aros_patient_id": s.aros_patient_id
         }
         return JsonResponse(data)

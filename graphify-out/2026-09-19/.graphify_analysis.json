@@ -1,15 +1,10 @@
 {
   "communities": {
     "0": [
+      "abstractbaseuser",
       "apps_core_api_arospacs_urls",
-      "apps_core_api_core_init",
       "apps_core_api_core_notifications_notify_federated_report_completed",
-      "apps_core_api_core_notifications_rationale_79",
-      "apps_core_api_core_urls",
-      "apps_core_api_core_urls_rationale_1",
-      "apps_core_api_core_views",
-      "apps_core_api_core_views_health_check",
-      "apps_core_api_core_views_ready_check",
+      "apps_core_api_core_notifications_rationale_77",
       "apps_core_api_gateway_views_clinic_worklist",
       "apps_core_api_gateway_views_clinic_worklist_clinicreportproxyview",
       "apps_core_api_gateway_views_clinic_worklist_clinicreportproxyview_post",
@@ -18,12 +13,41 @@
       "apps_core_api_gateway_views_clinic_worklist_py_apiview",
       "apps_core_api_gateway_views_clinic_worklist_rationale_10",
       "apps_core_api_gateway_views_clinic_worklist_rationale_54",
-      "apps_core_api_identity_authentication",
-      "apps_core_api_identity_authentication_blacklist_token",
-      "apps_core_api_identity_authentication_rationale_11",
-      "apps_core_api_identity_authentication_rationale_24",
-      "apps_core_api_identity_authentication_redisblacklistjwtauthentication",
-      "apps_core_api_identity_authentication_redisblacklistjwtauthentication_get_validated_token",
+      "apps_core_api_gateway_views_webhooks",
+      "apps_core_api_gateway_views_webhooks_rationale_49",
+      "apps_core_api_identity_admin",
+      "apps_core_api_identity_admin_patientprofileadmin",
+      "apps_core_api_identity_admin_patientprofileadmin_user_email",
+      "apps_core_api_identity_admin_staffprofileadmin",
+      "apps_core_api_identity_admin_staffprofileadmin_user_email",
+      "apps_core_api_identity_admin_useradmin",
+      "apps_core_api_identity_auth_views",
+      "apps_core_api_identity_auth_views_patientregistrationview",
+      "apps_core_api_identity_auth_views_physicianregistrationview",
+      "apps_core_api_identity_auth_views_py_apiview",
+      "apps_core_api_identity_auth_views_verifyemailview",
+      "apps_core_api_identity_management_commands_load_demo_data",
+      "apps_core_api_identity_management_commands_load_demo_data_command",
+      "apps_core_api_identity_management_commands_load_demo_data_py_basecommand",
+      "apps_core_api_identity_models",
+      "apps_core_api_identity_models_clinicregistry",
+      "apps_core_api_identity_models_clinicregistry_str",
+      "apps_core_api_identity_models_clinicregistry_update_rating_stats",
+      "apps_core_api_identity_models_consentrecord",
+      "apps_core_api_identity_models_patientprofile",
+      "apps_core_api_identity_models_patientprofile_str",
+      "apps_core_api_identity_models_rationale_166",
+      "apps_core_api_identity_models_rationale_190",
+      "apps_core_api_identity_models_rationale_21",
+      "apps_core_api_identity_models_rationale_43",
+      "apps_core_api_identity_models_rationale_70",
+      "apps_core_api_identity_models_rationale_88",
+      "apps_core_api_identity_models_roles",
+      "apps_core_api_identity_models_roles_str",
+      "apps_core_api_identity_models_staffprofile",
+      "apps_core_api_identity_models_staffprofile_str",
+      "apps_core_api_identity_models_user",
+      "apps_core_api_identity_models_user_str",
       "apps_core_api_identity_views",
       "apps_core_api_identity_views_base64url_encode",
       "apps_core_api_identity_views_clinicconfigview",
@@ -50,21 +74,84 @@
       "apps_core_api_identity_views_patientlistview",
       "apps_core_api_identity_views_patientlistview_get",
       "apps_core_api_identity_views_py_apiview",
-      "apps_core_api_identity_views_rationale_145",
-      "apps_core_api_identity_views_rationale_180",
+      "apps_core_api_identity_views_rationale_118",
+      "apps_core_api_identity_views_rationale_153",
       "apps_core_api_identity_views_rationale_19",
-      "apps_core_api_identity_views_rationale_252",
+      "apps_core_api_identity_views_rationale_225",
       "apps_core_api_identity_views_useravataruploadview",
       "apps_core_api_identity_views_useravataruploadview_patch",
       "apps_core_api_identity_views_userprofileview",
       "apps_core_api_identity_views_userprofileview_get",
       "apps_core_api_identity_views_userprofileview_put",
-      "jwtauthentication",
+      "permissionsmixin",
+      "scripts_utils_populate_core",
       "tokenobtainpairserializer",
       "tokenobtainpairview",
       "tokenrefreshview"
     ],
     "1": [
+      "apps_core_api_core_notifications_notify_appointment_status_changed",
+      "apps_core_api_core_notifications_notify_consent_granted",
+      "apps_core_api_core_notifications_notify_consent_revoked",
+      "apps_core_api_core_notifications_notify_new_appointment",
+      "apps_core_api_core_notifications_rationale_237",
+      "apps_core_api_core_notifications_rationale_265",
+      "apps_core_api_core_notifications_rationale_288",
+      "apps_core_api_core_notifications_rationale_299",
+      "apps_core_api_gateway_views_clinic_agenda",
+      "apps_core_api_gateway_views_clinic_agenda_clinicagendaview",
+      "apps_core_api_gateway_views_clinic_agenda_clinicagendaview_get",
+      "apps_core_api_gateway_views_clinic_agenda_clinicagendaview_put",
+      "apps_core_api_gateway_views_clinic_agenda_py_apiview",
+      "apps_core_api_identity_models_appointment",
+      "apps_core_api_identity_models_clinicrating",
+      "apps_core_api_identity_models_clinicrating_str",
+      "apps_core_api_identity_models_federationidmap",
+      "apps_core_api_identity_models_meta",
+      "apps_core_api_identity_models_patientdoctorconsent",
+      "apps_core_api_identity_models_rationale_147",
+      "apps_core_api_identity_models_rationale_176",
+      "apps_core_api_identity_models_rationale_215",
+      "apps_core_api_identity_models_rationale_231",
+      "apps_core_api_identity_patient_views",
+      "apps_core_api_identity_patient_views_clinicrateview",
+      "apps_core_api_identity_patient_views_clinicrateview_post",
+      "apps_core_api_identity_patient_views_clinicsview",
+      "apps_core_api_identity_patient_views_clinicsview_get",
+      "apps_core_api_identity_patient_views_patientappointmentsview",
+      "apps_core_api_identity_patient_views_patientappointmentsview_get",
+      "apps_core_api_identity_patient_views_patientappointmentsview_post",
+      "apps_core_api_identity_patient_views_patientappointmentsview_put",
+      "apps_core_api_identity_patient_views_patientdoctorsview",
+      "apps_core_api_identity_patient_views_patientdoctorsview_get",
+      "apps_core_api_identity_patient_views_patientdoctorsview_post",
+      "apps_core_api_identity_patient_views_patientmeview",
+      "apps_core_api_identity_patient_views_patientmeview_get",
+      "apps_core_api_identity_patient_views_patientmeview_put",
+      "apps_core_api_identity_patient_views_py_apiview",
+      "apps_core_api_identity_patient_views_rationale_203",
+      "apps_core_api_identity_physician_views",
+      "apps_core_api_identity_physician_views_physicianappointmentsview",
+      "apps_core_api_identity_physician_views_physicianappointmentsview_get",
+      "apps_core_api_identity_physician_views_physicianappointmentsview_post",
+      "apps_core_api_identity_physician_views_physicianappointmentsview_put",
+      "apps_core_api_identity_physician_views_physicianpatientsview",
+      "apps_core_api_identity_physician_views_physicianpatientsview_get",
+      "apps_core_api_identity_physician_views_physicianstudiesview",
+      "apps_core_api_identity_physician_views_physicianstudiesview_get",
+      "apps_core_api_identity_physician_views_physicianstudydetailview",
+      "apps_core_api_identity_physician_views_physicianstudydetailview_get",
+      "apps_core_api_identity_physician_views_py_apiview",
+      "apps_core_api_identity_physician_views_rationale_11",
+      "apps_core_api_identity_physician_views_rationale_112",
+      "apps_core_api_identity_physician_views_rationale_174",
+      "apps_core_api_identity_physician_views_rationale_45",
+      "apps_core_api_identity_signals",
+      "apps_core_api_identity_signals_appointment_updated",
+      "apps_core_api_identity_urls",
+      "receiver"
+    ],
+    "2": [
       "apps_clinic_portal_tsconfig_app",
       "apps_clinic_portal_tsconfig_app_compileroptions",
       "apps_clinic_portal_tsconfig_app_compileroptions_allowarbitraryextensions",
@@ -89,32 +176,32 @@
       "apps_clinic_portal_tsconfig_app_json_ref_es2023",
       "apps_clinic_portal_tsconfig_app_json_ref_src",
       "apps_clinic_portal_tsconfig_app_json_ref_vite_client",
-      "apps_patient_portal_tsconfig_app",
-      "apps_patient_portal_tsconfig_app_compileroptions",
-      "apps_patient_portal_tsconfig_app_compileroptions_allowarbitraryextensions",
-      "apps_patient_portal_tsconfig_app_compileroptions_allowimportingtsextensions",
-      "apps_patient_portal_tsconfig_app_compileroptions_erasablesyntaxonly",
-      "apps_patient_portal_tsconfig_app_compileroptions_jsx",
-      "apps_patient_portal_tsconfig_app_compileroptions_lib",
-      "apps_patient_portal_tsconfig_app_compileroptions_module",
-      "apps_patient_portal_tsconfig_app_compileroptions_moduledetection",
-      "apps_patient_portal_tsconfig_app_compileroptions_moduleresolution",
-      "apps_patient_portal_tsconfig_app_compileroptions_noemit",
-      "apps_patient_portal_tsconfig_app_compileroptions_nofallthroughcasesinswitch",
-      "apps_patient_portal_tsconfig_app_compileroptions_nounusedlocals",
-      "apps_patient_portal_tsconfig_app_compileroptions_nounusedparameters",
-      "apps_patient_portal_tsconfig_app_compileroptions_skiplibcheck",
-      "apps_patient_portal_tsconfig_app_compileroptions_target",
-      "apps_patient_portal_tsconfig_app_compileroptions_tsbuildinfofile",
       "apps_patient_portal_tsconfig_app_compileroptions_types",
-      "apps_patient_portal_tsconfig_app_compileroptions_verbatimmodulesyntax",
-      "apps_patient_portal_tsconfig_app_include",
-      "apps_patient_portal_tsconfig_app_json_ref_dom",
-      "apps_patient_portal_tsconfig_app_json_ref_es2023",
-      "apps_patient_portal_tsconfig_app_json_ref_src",
-      "apps_physician_portal_tsconfig_app_compileroptions_types"
+      "apps_physician_portal_tsconfig_app",
+      "apps_physician_portal_tsconfig_app_compileroptions",
+      "apps_physician_portal_tsconfig_app_compileroptions_allowarbitraryextensions",
+      "apps_physician_portal_tsconfig_app_compileroptions_allowimportingtsextensions",
+      "apps_physician_portal_tsconfig_app_compileroptions_erasablesyntaxonly",
+      "apps_physician_portal_tsconfig_app_compileroptions_jsx",
+      "apps_physician_portal_tsconfig_app_compileroptions_lib",
+      "apps_physician_portal_tsconfig_app_compileroptions_module",
+      "apps_physician_portal_tsconfig_app_compileroptions_moduledetection",
+      "apps_physician_portal_tsconfig_app_compileroptions_moduleresolution",
+      "apps_physician_portal_tsconfig_app_compileroptions_noemit",
+      "apps_physician_portal_tsconfig_app_compileroptions_nofallthroughcasesinswitch",
+      "apps_physician_portal_tsconfig_app_compileroptions_nounusedlocals",
+      "apps_physician_portal_tsconfig_app_compileroptions_nounusedparameters",
+      "apps_physician_portal_tsconfig_app_compileroptions_skiplibcheck",
+      "apps_physician_portal_tsconfig_app_compileroptions_target",
+      "apps_physician_portal_tsconfig_app_compileroptions_tsbuildinfofile",
+      "apps_physician_portal_tsconfig_app_compileroptions_types",
+      "apps_physician_portal_tsconfig_app_compileroptions_verbatimmodulesyntax",
+      "apps_physician_portal_tsconfig_app_include",
+      "apps_physician_portal_tsconfig_app_json_ref_dom",
+      "apps_physician_portal_tsconfig_app_json_ref_es2023",
+      "apps_physician_portal_tsconfig_app_json_ref_src"
     ],
-    "2": [
+    "3": [
       "apps_clinic_portal_src_api",
       "apps_clinic_portal_src_api_api",
       "apps_clinic_portal_src_api_failedqueue",
@@ -159,49 +246,6 @@
       "apps_clinic_portal_src_components_schedulebuilder_schedulestate",
       "apps_clinic_portal_src_main"
     ],
-    "3": [
-      "apps_clinic_portal_tsconfig_node",
-      "apps_clinic_portal_tsconfig_node_compileroptions",
-      "apps_clinic_portal_tsconfig_node_compileroptions_allowimportingtsextensions",
-      "apps_clinic_portal_tsconfig_node_compileroptions_erasablesyntaxonly",
-      "apps_clinic_portal_tsconfig_node_compileroptions_lib",
-      "apps_clinic_portal_tsconfig_node_compileroptions_module",
-      "apps_clinic_portal_tsconfig_node_compileroptions_moduledetection",
-      "apps_clinic_portal_tsconfig_node_compileroptions_noemit",
-      "apps_clinic_portal_tsconfig_node_compileroptions_nofallthroughcasesinswitch",
-      "apps_clinic_portal_tsconfig_node_compileroptions_nounusedlocals",
-      "apps_clinic_portal_tsconfig_node_compileroptions_nounusedparameters",
-      "apps_clinic_portal_tsconfig_node_compileroptions_skiplibcheck",
-      "apps_clinic_portal_tsconfig_node_compileroptions_target",
-      "apps_clinic_portal_tsconfig_node_compileroptions_tsbuildinfofile",
-      "apps_clinic_portal_tsconfig_node_compileroptions_types",
-      "apps_clinic_portal_tsconfig_node_compileroptions_verbatimmodulesyntax",
-      "apps_clinic_portal_tsconfig_node_include",
-      "apps_clinic_portal_tsconfig_node_json_ref_es2023",
-      "apps_clinic_portal_tsconfig_node_json_ref_node",
-      "apps_clinic_portal_tsconfig_node_json_ref_vite_config_ts",
-      "apps_patient_portal_tsconfig_node",
-      "apps_patient_portal_tsconfig_node_include",
-      "apps_physician_portal_tsconfig_node",
-      "apps_physician_portal_tsconfig_node_compileroptions",
-      "apps_physician_portal_tsconfig_node_compileroptions_allowimportingtsextensions",
-      "apps_physician_portal_tsconfig_node_compileroptions_erasablesyntaxonly",
-      "apps_physician_portal_tsconfig_node_compileroptions_lib",
-      "apps_physician_portal_tsconfig_node_compileroptions_module",
-      "apps_physician_portal_tsconfig_node_compileroptions_moduledetection",
-      "apps_physician_portal_tsconfig_node_compileroptions_noemit",
-      "apps_physician_portal_tsconfig_node_compileroptions_nofallthroughcasesinswitch",
-      "apps_physician_portal_tsconfig_node_compileroptions_nounusedlocals",
-      "apps_physician_portal_tsconfig_node_compileroptions_nounusedparameters",
-      "apps_physician_portal_tsconfig_node_compileroptions_skiplibcheck",
-      "apps_physician_portal_tsconfig_node_compileroptions_target",
-      "apps_physician_portal_tsconfig_node_compileroptions_tsbuildinfofile",
-      "apps_physician_portal_tsconfig_node_compileroptions_types",
-      "apps_physician_portal_tsconfig_node_compileroptions_verbatimmodulesyntax",
-      "apps_physician_portal_tsconfig_node_include",
-      "apps_physician_portal_tsconfig_node_json_ref_es2023",
-      "apps_physician_portal_tsconfig_node_json_ref_node"
-    ],
     "4": [
       "packages_typescript_config_nextjs",
       "packages_typescript_config_nextjs_compileroptions",
@@ -237,6 +281,39 @@
       "packages_typescript_config_react_library_schema"
     ],
     "5": [
+      "apps_core_api_gateway_client",
+      "apps_core_api_gateway_client_get_clinic_breaker",
+      "apps_core_api_gateway_client_rationale_14",
+      "apps_core_api_gateway_services_clinic_integration",
+      "apps_core_api_gateway_services_clinic_integration_clinicservice",
+      "apps_core_api_gateway_services_clinic_integration_clinicservice_get_studies",
+      "apps_core_api_gateway_services_clinic_integration_clinicservice_get_study",
+      "apps_core_api_gateway_services_clinic_integration_clinicservice_post_report",
+      "apps_core_api_gateway_services_clinic_integration_rationale_13",
+      "apps_core_api_gateway_services_clinic_integration_rationale_44",
+      "apps_core_api_gateway_services_clinic_integration_rationale_7",
+      "apps_core_api_gateway_services_clinic_integration_rationale_73",
+      "apps_core_api_gateway_urls",
+      "apps_core_api_gateway_views_federated",
+      "apps_core_api_gateway_views_federated_federatedstudiesview",
+      "apps_core_api_gateway_views_federated_federatedstudiesview_get",
+      "apps_core_api_gateway_views_federated_py_apiview",
+      "apps_core_api_gateway_views_federated_rationale_13",
+      "apps_core_api_gateway_views_proxy",
+      "apps_core_api_gateway_views_proxy_rationale_6",
+      "apps_core_api_gateway_views_proxy_wadorsproxyview",
+      "apps_core_api_gateway_views_proxy_wadorsproxyview_get",
+      "apps_core_api_gateway_views_proxy_wadorsproxyview_options",
+      "apps_core_api_gateway_views_reports",
+      "apps_core_api_gateway_views_reports_py_apiview",
+      "apps_core_api_gateway_views_reports_studyreportpdfview",
+      "apps_core_api_gateway_views_reports_studyreportpdfview_get",
+      "apps_core_api_gateway_views_reports_studyreportpreviewpdfview",
+      "apps_core_api_gateway_views_reports_studyreportpreviewpdfview_post",
+      "circuitbreaker",
+      "view"
+    ],
+    "6": [
       "apps_patient_portal_src_api",
       "apps_patient_portal_src_api_api",
       "apps_patient_portal_src_api_failedqueue",
@@ -268,94 +345,7 @@
       "apps_patient_portal_src_components_imagecropper_imagecropperprops",
       "apps_patient_portal_src_main"
     ],
-    "6": [
-      "apps_core_api_core_notifications",
-      "apps_core_api_core_notifications_notify_appointment_status_changed",
-      "apps_core_api_core_notifications_notify_doctor_approved",
-      "apps_core_api_core_notifications_notify_doctor_denied",
-      "apps_core_api_core_notifications_notify_doctor_pending_approval",
-      "apps_core_api_core_notifications_notify_images_available",
-      "apps_core_api_core_notifications_notify_new_study",
-      "apps_core_api_core_notifications_notify_report_completed",
-      "apps_core_api_core_notifications_notify_report_locked",
-      "apps_core_api_core_notifications_notify_studies_unlocked",
-      "apps_core_api_core_notifications_notify_study_request_created",
-      "apps_core_api_core_notifications_rationale_1",
-      "apps_core_api_core_notifications_rationale_10",
-      "apps_core_api_core_notifications_rationale_130",
-      "apps_core_api_core_notifications_rationale_144",
-      "apps_core_api_core_notifications_rationale_166",
-      "apps_core_api_core_notifications_rationale_185",
-      "apps_core_api_core_notifications_rationale_201",
-      "apps_core_api_core_notifications_rationale_212",
-      "apps_core_api_core_notifications_rationale_223",
-      "apps_core_api_core_notifications_rationale_26",
-      "apps_core_api_core_notifications_rationale_308",
-      "apps_core_api_core_notifications_rationale_52",
-      "apps_core_api_core_notifications_send_to_group",
-      "apps_core_api_gateway_views_clinic_agenda_clinicagendaview",
-      "apps_core_api_gateway_views_clinic_agenda_clinicagendaview_get",
-      "apps_core_api_gateway_views_clinic_agenda_clinicagendaview_put",
-      "apps_core_api_gateway_views_clinic_agenda_py_apiview",
-      "apps_core_api_identity_patient_views_patientappointmentsview_put"
-    ],
     "7": [
-      "apps_core_api_core_notifications_notify_consent_granted",
-      "apps_core_api_core_notifications_notify_consent_revoked",
-      "apps_core_api_core_notifications_rationale_246",
-      "apps_core_api_core_notifications_rationale_274",
-      "apps_core_api_identity_models_clinicrating",
-      "apps_core_api_identity_models_clinicrating_str",
-      "apps_core_api_identity_models_meta",
-      "apps_core_api_identity_models_patientdoctorconsent",
-      "apps_core_api_identity_models_rationale_147",
-      "apps_core_api_identity_models_rationale_215",
-      "apps_core_api_identity_patient_views",
-      "apps_core_api_identity_patient_views_clinicrateview",
-      "apps_core_api_identity_patient_views_clinicrateview_post",
-      "apps_core_api_identity_patient_views_clinicsview",
-      "apps_core_api_identity_patient_views_clinicsview_get",
-      "apps_core_api_identity_patient_views_patientappointmentsview",
-      "apps_core_api_identity_patient_views_patientappointmentsview_get",
-      "apps_core_api_identity_patient_views_patientappointmentsview_post",
-      "apps_core_api_identity_patient_views_patientdoctorsview",
-      "apps_core_api_identity_patient_views_patientdoctorsview_get",
-      "apps_core_api_identity_patient_views_patientdoctorsview_post",
-      "apps_core_api_identity_patient_views_patientmeview",
-      "apps_core_api_identity_patient_views_patientmeview_get",
-      "apps_core_api_identity_patient_views_patientmeview_put",
-      "apps_core_api_identity_patient_views_py_apiview",
-      "apps_core_api_identity_patient_views_rationale_203",
-      "apps_core_api_identity_urls"
-    ],
-    "8": [
-      "abstractbaseuser",
-      "apps_core_api_identity_admin",
-      "apps_core_api_identity_admin_patientprofileadmin",
-      "apps_core_api_identity_admin_patientprofileadmin_user_email",
-      "apps_core_api_identity_admin_staffprofileadmin",
-      "apps_core_api_identity_admin_staffprofileadmin_user_email",
-      "apps_core_api_identity_admin_useradmin",
-      "apps_core_api_identity_auth_views",
-      "apps_core_api_identity_auth_views_patientregistrationview",
-      "apps_core_api_identity_auth_views_physicianregistrationview",
-      "apps_core_api_identity_auth_views_py_apiview",
-      "apps_core_api_identity_auth_views_verifyemailview",
-      "apps_core_api_identity_models_patientprofile",
-      "apps_core_api_identity_models_patientprofile_str",
-      "apps_core_api_identity_models_rationale_166",
-      "apps_core_api_identity_models_rationale_21",
-      "apps_core_api_identity_models_rationale_43",
-      "apps_core_api_identity_models_rationale_70",
-      "apps_core_api_identity_models_roles",
-      "apps_core_api_identity_models_roles_str",
-      "apps_core_api_identity_models_staffprofile",
-      "apps_core_api_identity_models_staffprofile_str",
-      "apps_core_api_identity_models_user",
-      "apps_core_api_identity_models_user_str",
-      "permissionsmixin"
-    ],
-    "9": [
       "action",
       "apps_core_api_core_email_service",
       "apps_core_api_core_email_service_make_verification_token",
@@ -381,32 +371,7 @@
       "apps_core_api_identity_aws_utils_rationale_59",
       "atomic"
     ],
-    "10": [
-      "apps_core_api_core_notifications_notify_new_appointment",
-      "apps_core_api_core_notifications_rationale_297",
-      "apps_core_api_identity_models_appointment",
-      "apps_core_api_identity_models_rationale_231",
-      "apps_core_api_identity_physician_views",
-      "apps_core_api_identity_physician_views_physicianappointmentsview",
-      "apps_core_api_identity_physician_views_physicianappointmentsview_get",
-      "apps_core_api_identity_physician_views_physicianappointmentsview_post",
-      "apps_core_api_identity_physician_views_physicianappointmentsview_put",
-      "apps_core_api_identity_physician_views_physicianpatientsview",
-      "apps_core_api_identity_physician_views_physicianpatientsview_get",
-      "apps_core_api_identity_physician_views_physicianstudiesview",
-      "apps_core_api_identity_physician_views_physicianstudiesview_get",
-      "apps_core_api_identity_physician_views_physicianstudydetailview",
-      "apps_core_api_identity_physician_views_physicianstudydetailview_get",
-      "apps_core_api_identity_physician_views_py_apiview",
-      "apps_core_api_identity_physician_views_rationale_11",
-      "apps_core_api_identity_physician_views_rationale_112",
-      "apps_core_api_identity_physician_views_rationale_174",
-      "apps_core_api_identity_physician_views_rationale_45",
-      "apps_core_api_identity_signals",
-      "apps_core_api_identity_signals_appointment_updated",
-      "receiver"
-    ],
-    "11": [
+    "8": [
       "apps_physician_portal_src_api",
       "apps_physician_portal_src_api_api",
       "apps_physician_portal_src_api_failedqueue",
@@ -431,7 +396,7 @@
       "apps_physician_portal_src_components_imagecropper_imagecropperprops",
       "apps_physician_portal_src_main"
     ],
-    "12": [
+    "9": [
       "apps_core_api_arospacs_asgi",
       "apps_core_api_arospacs_asgi_rationale_1",
       "apps_core_api_gateway_consumers",
@@ -443,6 +408,7 @@
       "apps_core_api_gateway_consumers_notificationsconsumer_consent_revoked",
       "apps_core_api_gateway_consumers_notificationsconsumer_disconnect",
       "apps_core_api_gateway_consumers_notificationsconsumer_report_completed",
+      "apps_core_api_gateway_consumers_py_database_sync_to_async",
       "apps_core_api_gateway_init",
       "apps_core_api_gateway_middleware",
       "apps_core_api_gateway_middleware_get_user_from_token",
@@ -452,58 +418,57 @@
       "apps_core_api_gateway_middleware_jwtauthmiddlewarestack",
       "apps_core_api_gateway_middleware_py_database_sync_to_async",
       "apps_core_api_gateway_routing",
-      "asyncwebsocketconsumer",
-      "database_sync_to_async"
+      "asyncwebsocketconsumer"
     ],
-    "13": [
-      "apps_core_api_gateway_urls",
-      "apps_core_api_gateway_views_clinic_agenda",
-      "apps_core_api_gateway_views_federated",
-      "apps_core_api_gateway_views_federated_federatedstudiesview",
-      "apps_core_api_gateway_views_federated_federatedstudiesview_get",
-      "apps_core_api_gateway_views_federated_py_apiview",
-      "apps_core_api_gateway_views_federated_rationale_13",
-      "apps_core_api_gateway_views_webhooks",
-      "apps_core_api_gateway_views_webhooks_rationale_49",
-      "apps_core_api_identity_management_commands_load_demo_data",
-      "apps_core_api_identity_management_commands_load_demo_data_command",
-      "apps_core_api_identity_management_commands_load_demo_data_py_basecommand",
-      "apps_core_api_identity_models",
-      "apps_core_api_identity_models_clinicregistry",
-      "apps_core_api_identity_models_clinicregistry_str",
-      "apps_core_api_identity_models_clinicregistry_update_rating_stats",
-      "apps_core_api_identity_models_consentrecord",
-      "apps_core_api_identity_models_federationidmap",
-      "apps_core_api_identity_models_rationale_176",
-      "apps_core_api_identity_models_rationale_190",
-      "apps_core_api_identity_models_rationale_88",
-      "scripts_utils_populate_core"
+    "10": [
+      "apps_core_api_core_notifications",
+      "apps_core_api_core_notifications_notify_doctor_approved",
+      "apps_core_api_core_notifications_notify_doctor_denied",
+      "apps_core_api_core_notifications_notify_doctor_pending_approval",
+      "apps_core_api_core_notifications_notify_images_available",
+      "apps_core_api_core_notifications_notify_new_study",
+      "apps_core_api_core_notifications_notify_report_completed",
+      "apps_core_api_core_notifications_notify_report_locked",
+      "apps_core_api_core_notifications_notify_studies_unlocked",
+      "apps_core_api_core_notifications_notify_study_request_created",
+      "apps_core_api_core_notifications_rationale_1",
+      "apps_core_api_core_notifications_rationale_10",
+      "apps_core_api_core_notifications_rationale_123",
+      "apps_core_api_core_notifications_rationale_137",
+      "apps_core_api_core_notifications_rationale_158",
+      "apps_core_api_core_notifications_rationale_177",
+      "apps_core_api_core_notifications_rationale_193",
+      "apps_core_api_core_notifications_rationale_204",
+      "apps_core_api_core_notifications_rationale_215",
+      "apps_core_api_core_notifications_rationale_26",
+      "apps_core_api_core_notifications_rationale_51",
+      "apps_core_api_core_notifications_send_to_group"
     ],
-    "14": [
-      "apps_physician_portal_tsconfig_app",
-      "apps_physician_portal_tsconfig_app_compileroptions",
-      "apps_physician_portal_tsconfig_app_compileroptions_allowarbitraryextensions",
-      "apps_physician_portal_tsconfig_app_compileroptions_allowimportingtsextensions",
-      "apps_physician_portal_tsconfig_app_compileroptions_erasablesyntaxonly",
-      "apps_physician_portal_tsconfig_app_compileroptions_jsx",
-      "apps_physician_portal_tsconfig_app_compileroptions_lib",
-      "apps_physician_portal_tsconfig_app_compileroptions_module",
-      "apps_physician_portal_tsconfig_app_compileroptions_moduledetection",
-      "apps_physician_portal_tsconfig_app_compileroptions_moduleresolution",
-      "apps_physician_portal_tsconfig_app_compileroptions_noemit",
-      "apps_physician_portal_tsconfig_app_compileroptions_nofallthroughcasesinswitch",
-      "apps_physician_portal_tsconfig_app_compileroptions_nounusedlocals",
-      "apps_physician_portal_tsconfig_app_compileroptions_nounusedparameters",
-      "apps_physician_portal_tsconfig_app_compileroptions_skiplibcheck",
-      "apps_physician_portal_tsconfig_app_compileroptions_target",
-      "apps_physician_portal_tsconfig_app_compileroptions_tsbuildinfofile",
-      "apps_physician_portal_tsconfig_app_compileroptions_verbatimmodulesyntax",
-      "apps_physician_portal_tsconfig_app_include",
-      "apps_physician_portal_tsconfig_app_json_ref_dom",
-      "apps_physician_portal_tsconfig_app_json_ref_es2023",
-      "apps_physician_portal_tsconfig_app_json_ref_src"
+    "11": [
+      "apps_patient_portal_tsconfig_app",
+      "apps_patient_portal_tsconfig_app_compileroptions",
+      "apps_patient_portal_tsconfig_app_compileroptions_allowarbitraryextensions",
+      "apps_patient_portal_tsconfig_app_compileroptions_allowimportingtsextensions",
+      "apps_patient_portal_tsconfig_app_compileroptions_erasablesyntaxonly",
+      "apps_patient_portal_tsconfig_app_compileroptions_jsx",
+      "apps_patient_portal_tsconfig_app_compileroptions_lib",
+      "apps_patient_portal_tsconfig_app_compileroptions_module",
+      "apps_patient_portal_tsconfig_app_compileroptions_moduledetection",
+      "apps_patient_portal_tsconfig_app_compileroptions_moduleresolution",
+      "apps_patient_portal_tsconfig_app_compileroptions_noemit",
+      "apps_patient_portal_tsconfig_app_compileroptions_nofallthroughcasesinswitch",
+      "apps_patient_portal_tsconfig_app_compileroptions_nounusedlocals",
+      "apps_patient_portal_tsconfig_app_compileroptions_nounusedparameters",
+      "apps_patient_portal_tsconfig_app_compileroptions_skiplibcheck",
+      "apps_patient_portal_tsconfig_app_compileroptions_target",
+      "apps_patient_portal_tsconfig_app_compileroptions_tsbuildinfofile",
+      "apps_patient_portal_tsconfig_app_compileroptions_verbatimmodulesyntax",
+      "apps_patient_portal_tsconfig_app_include",
+      "apps_patient_portal_tsconfig_app_json_ref_dom",
+      "apps_patient_portal_tsconfig_app_json_ref_es2023",
+      "apps_patient_portal_tsconfig_app_json_ref_src"
     ],
-    "15": [
+    "12": [
       "package",
       "package_devdependencies",
       "package_devdependencies_prettier",
@@ -526,7 +491,7 @@
       "package_scripts_typecheck",
       "prettier"
     ],
-    "16": [
+    "13": [
       "apps_core_api_core_permissions_assistant",
       "apps_core_api_core_permissions_assistant_isassistantuser",
       "apps_core_api_core_permissions_assistant_isassistantuser_has_permission",
@@ -547,7 +512,7 @@
       "apps_core_api_core_permissions_patient_py_basepermission",
       "apps_core_api_core_permissions_patient_rationale_4"
     ],
-    "17": [
+    "14": [
       "packages_typescript_config_base",
       "packages_typescript_config_base_compileroptions",
       "packages_typescript_config_base_compileroptions_composite",
@@ -568,7 +533,7 @@
       "packages_typescript_config_base_schema",
       "ref_node_modules"
     ],
-    "18": [
+    "15": [
       "ref_build",
       "ref_dist",
       "ref_lint",
@@ -589,7 +554,7 @@
       "turbo_tasks_typecheck",
       "turbo_typecheck_dependson"
     ],
-    "19": [
+    "16": [
       "apps_core_api_arospacs_settings",
       "apps_core_api_arospacs_settings_rationale_1",
       "apps_core_api_gateway_s2s_auth",
@@ -609,7 +574,26 @@
       "apps_core_api_identity_jwt_custom_rationale_10",
       "tokenbackend"
     ],
-    "20": [
+    "17": [
+      "apps_clinic_portal_tsconfig_node_compileroptions",
+      "apps_clinic_portal_tsconfig_node_compileroptions_allowimportingtsextensions",
+      "apps_clinic_portal_tsconfig_node_compileroptions_erasablesyntaxonly",
+      "apps_clinic_portal_tsconfig_node_compileroptions_lib",
+      "apps_clinic_portal_tsconfig_node_compileroptions_module",
+      "apps_clinic_portal_tsconfig_node_compileroptions_moduledetection",
+      "apps_clinic_portal_tsconfig_node_compileroptions_noemit",
+      "apps_clinic_portal_tsconfig_node_compileroptions_nofallthroughcasesinswitch",
+      "apps_clinic_portal_tsconfig_node_compileroptions_nounusedlocals",
+      "apps_clinic_portal_tsconfig_node_compileroptions_nounusedparameters",
+      "apps_clinic_portal_tsconfig_node_compileroptions_skiplibcheck",
+      "apps_clinic_portal_tsconfig_node_compileroptions_target",
+      "apps_clinic_portal_tsconfig_node_compileroptions_tsbuildinfofile",
+      "apps_clinic_portal_tsconfig_node_compileroptions_types",
+      "apps_clinic_portal_tsconfig_node_compileroptions_verbatimmodulesyntax",
+      "apps_clinic_portal_tsconfig_node_json_ref_es2023",
+      "apps_clinic_portal_tsconfig_node_json_ref_node"
+    ],
+    "18": [
       "apps_patient_portal_tsconfig_node_compileroptions",
       "apps_patient_portal_tsconfig_node_compileroptions_allowimportingtsextensions",
       "apps_patient_portal_tsconfig_node_compileroptions_erasablesyntaxonly",
@@ -628,28 +612,30 @@
       "apps_patient_portal_tsconfig_node_json_ref_es2023",
       "apps_patient_portal_tsconfig_node_json_ref_node"
     ],
-    "21": [
-      "apps_core_api_gateway_services_clinic_integration",
-      "apps_core_api_gateway_services_clinic_integration_clinicservice",
-      "apps_core_api_gateway_services_clinic_integration_clinicservice_get_studies",
-      "apps_core_api_gateway_services_clinic_integration_clinicservice_get_study",
-      "apps_core_api_gateway_services_clinic_integration_clinicservice_post_report",
-      "apps_core_api_gateway_services_clinic_integration_rationale_13",
-      "apps_core_api_gateway_services_clinic_integration_rationale_44",
-      "apps_core_api_gateway_services_clinic_integration_rationale_7",
-      "apps_core_api_gateway_services_clinic_integration_rationale_73",
-      "apps_core_api_gateway_views_reports",
-      "apps_core_api_gateway_views_reports_py_apiview",
-      "apps_core_api_gateway_views_reports_studyreportpdfview",
-      "apps_core_api_gateway_views_reports_studyreportpdfview_get",
-      "apps_core_api_gateway_views_reports_studyreportpreviewpdfview",
-      "apps_core_api_gateway_views_reports_studyreportpreviewpdfview_post"
+    "19": [
+      "apps_physician_portal_tsconfig_node_compileroptions",
+      "apps_physician_portal_tsconfig_node_compileroptions_allowimportingtsextensions",
+      "apps_physician_portal_tsconfig_node_compileroptions_erasablesyntaxonly",
+      "apps_physician_portal_tsconfig_node_compileroptions_lib",
+      "apps_physician_portal_tsconfig_node_compileroptions_module",
+      "apps_physician_portal_tsconfig_node_compileroptions_moduledetection",
+      "apps_physician_portal_tsconfig_node_compileroptions_noemit",
+      "apps_physician_portal_tsconfig_node_compileroptions_nofallthroughcasesinswitch",
+      "apps_physician_portal_tsconfig_node_compileroptions_nounusedlocals",
+      "apps_physician_portal_tsconfig_node_compileroptions_nounusedparameters",
+      "apps_physician_portal_tsconfig_node_compileroptions_skiplibcheck",
+      "apps_physician_portal_tsconfig_node_compileroptions_target",
+      "apps_physician_portal_tsconfig_node_compileroptions_tsbuildinfofile",
+      "apps_physician_portal_tsconfig_node_compileroptions_types",
+      "apps_physician_portal_tsconfig_node_compileroptions_verbatimmodulesyntax",
+      "apps_physician_portal_tsconfig_node_json_ref_es2023",
+      "apps_physician_portal_tsconfig_node_json_ref_node"
     ],
-    "22": [
+    "20": [
       "apps_clinic_api_clinical_data_urls",
       "apps_clinic_api_clinical_data_views_reports",
       "apps_clinic_api_clinical_data_views_reports_py_apiview",
-      "apps_clinic_api_clinical_data_views_reports_rationale_9",
+      "apps_clinic_api_clinical_data_views_reports_rationale_7",
       "apps_clinic_api_clinical_data_views_reports_reportview",
       "apps_clinic_api_clinical_data_views_reports_reportview_post",
       "apps_clinic_api_clinical_data_views_studies",
@@ -661,23 +647,7 @@
       "apps_clinic_api_clinical_data_views_studies_rationale_10",
       "apps_clinic_api_clinical_data_views_studies_rationale_61"
     ],
-    "23": [
-      "apps_clinic_portal_package_dependencies",
-      "apps_clinic_portal_package_dependencies_axios",
-      "apps_clinic_portal_package_dependencies_leaflet",
-      "apps_clinic_portal_package_dependencies_react",
-      "apps_clinic_portal_package_dependencies_react_quill_new",
-      "apps_clinic_portal_package_dependencies_react_split",
-      "apps_clinic_portal_package_dependencies_types_leaflet",
-      "apps_clinic_portal_package_json_axios",
-      "apps_clinic_portal_package_json_leaflet",
-      "apps_clinic_portal_package_json_react",
-      "apps_clinic_portal_package_json_types_leaflet",
-      "apps_patient_portal_package_devdependencies_types_leaflet",
-      "react_quill_new",
-      "react_split"
-    ],
-    "24": [
+    "21": [
       "readme",
       "readme_alcance",
       "readme_autores_y_contacto",
@@ -693,7 +663,7 @@
       "readme_requisitos_previos",
       "readme_tecnolog\u00edas_utilizadas"
     ],
-    "25": [
+    "22": [
       "apps_core_api_core_management_commands_populate_db",
       "apps_core_api_core_management_commands_populate_db_command",
       "apps_core_api_core_management_commands_populate_db_command_create_assistant",
@@ -708,7 +678,7 @@
       "apps_core_api_core_management_commands_populate_db_py_basecommand",
       "apps_core_api_core_models"
     ],
-    "26": [
+    "23": [
       "apps_clinic_api_clinic_api_urls",
       "apps_clinic_api_clinic_api_urls_rationale_1",
       "apps_clinic_api_clinic_api_views",
@@ -722,7 +692,7 @@
       "apps_clinic_api_clinical_data_views_orthanc_webhook_py_apiview",
       "apps_clinic_api_clinical_data_views_orthanc_webhook_rationale_10"
     ],
-    "27": [
+    "24": [
       "eslint",
       "eslint_config_next",
       "eslint_config_prettier",
@@ -736,7 +706,7 @@
       "packages_eslint_config_package_private",
       "packages_eslint_config_package_version"
     ],
-    "28": [
+    "25": [
       "start",
       "start_check_prerequisites",
       "start_ensure_docker_running",
@@ -750,18 +720,57 @@
       "start_start_apps",
       "start_start_infra"
     ],
-    "29": [
-      "apps_clinic_portal_package_dependencies_react_use_websocket",
-      "apps_clinic_portal_package_json_react_use_websocket",
+    "26": [
+      "apps_clinic_portal_package_dependencies",
+      "apps_clinic_portal_package_dependencies_axios",
+      "apps_clinic_portal_package_dependencies_leaflet",
+      "apps_clinic_portal_package_dependencies_react",
+      "apps_clinic_portal_package_dependencies_react_quill_new",
+      "apps_clinic_portal_package_dependencies_react_split",
+      "apps_clinic_portal_package_json_axios",
+      "apps_clinic_portal_package_json_leaflet",
+      "apps_clinic_portal_package_json_react",
+      "react_quill_new",
+      "react_split"
+    ],
+    "27": [
+      "apps_clinic_portal_package_dependencies_react_dom",
+      "apps_clinic_portal_package_json_react_dom",
       "apps_patient_portal_package_dependencies",
       "apps_patient_portal_package_dependencies_axios",
       "apps_patient_portal_package_dependencies_leaflet",
       "apps_patient_portal_package_dependencies_react",
-      "apps_patient_portal_package_dependencies_react_use_websocket",
+      "apps_patient_portal_package_dependencies_react_dom",
       "apps_patient_portal_package_json_axios",
       "apps_patient_portal_package_json_leaflet",
       "apps_patient_portal_package_json_react",
-      "apps_physician_portal_package_dependencies_react_use_websocket"
+      "apps_physician_portal_package_dependencies_react_dom"
+    ],
+    "28": [
+      "apps_clinic_portal_package_dependencies_types_leaflet",
+      "apps_clinic_portal_package_devdependencies_autoprefixer",
+      "apps_clinic_portal_package_json_autoprefixer",
+      "apps_clinic_portal_package_json_types_leaflet",
+      "apps_patient_portal_package_devdependencies",
+      "apps_patient_portal_package_devdependencies_autoprefixer",
+      "apps_patient_portal_package_devdependencies_postcss",
+      "apps_patient_portal_package_devdependencies_types_leaflet",
+      "apps_patient_portal_package_devdependencies_vite",
+      "apps_patient_portal_package_json_postcss",
+      "apps_patient_portal_package_json_vite"
+    ],
+    "29": [
+      "apps_clinic_portal_package_devdependencies_tailwindcss",
+      "apps_clinic_portal_package_devdependencies_vitejs_plugin_react",
+      "apps_clinic_portal_package_json_tailwindcss",
+      "apps_clinic_portal_package_json_vitejs_plugin_react",
+      "apps_patient_portal_package_devdependencies_tailwindcss",
+      "apps_patient_portal_package_devdependencies_vitejs_plugin_react",
+      "apps_physician_portal_package_devdependencies",
+      "apps_physician_portal_package_devdependencies_tailwindcss",
+      "apps_physician_portal_package_devdependencies_vite",
+      "apps_physician_portal_package_devdependencies_vitejs_plugin_react",
+      "apps_physician_portal_package_json_vite"
     ],
     "30": [
       "apps_clinic_api_clinical_data_management_commands_sync_demo_studies",
@@ -812,26 +821,26 @@
       "apps_physician_portal_package_version"
     ],
     "34": [
-      "apps_clinic_portal_package_dependencies_react_dom",
-      "apps_clinic_portal_package_json_react_dom",
-      "apps_patient_portal_package_dependencies_react_dom",
+      "apps_clinic_portal_package_dependencies_types_react_datepicker",
+      "apps_clinic_portal_package_json_types_react_datepicker",
+      "apps_patient_portal_package_dependencies_types_react_datepicker",
       "apps_physician_portal_package_dependencies",
       "apps_physician_portal_package_dependencies_axios",
       "apps_physician_portal_package_dependencies_react",
-      "apps_physician_portal_package_dependencies_react_dom",
+      "apps_physician_portal_package_dependencies_types_react_datepicker",
       "apps_physician_portal_package_json_axios",
       "apps_physician_portal_package_json_react"
     ],
     "35": [
-      "apps_clinic_portal_package_devdependencies_tailwindcss",
-      "apps_clinic_portal_package_json_tailwindcss",
-      "apps_patient_portal_package_devdependencies",
-      "apps_patient_portal_package_devdependencies_postcss",
-      "apps_patient_portal_package_devdependencies_tailwindcss",
-      "apps_patient_portal_package_devdependencies_vite",
-      "apps_patient_portal_package_json_postcss",
-      "apps_patient_portal_package_json_vite",
-      "apps_physician_portal_package_devdependencies_tailwindcss"
+      "apps_clinic_portal_package_devdependencies",
+      "apps_clinic_portal_package_devdependencies_postcss",
+      "apps_clinic_portal_package_devdependencies_types_react",
+      "apps_clinic_portal_package_devdependencies_vite",
+      "apps_clinic_portal_package_json_postcss",
+      "apps_clinic_portal_package_json_types_react",
+      "apps_clinic_portal_package_json_vite",
+      "apps_patient_portal_package_devdependencies_types_react",
+      "apps_physician_portal_package_devdependencies_types_react"
     ],
     "36": [
       "apps_clinic_api_clinical_data_authentication",
@@ -854,16 +863,6 @@
       "apps_core_api_core_forms_studyrequestform"
     ],
     "38": [
-      "apps_clinic_portal_package_devdependencies",
-      "apps_clinic_portal_package_devdependencies_autoprefixer",
-      "apps_clinic_portal_package_devdependencies_postcss",
-      "apps_clinic_portal_package_devdependencies_vite",
-      "apps_clinic_portal_package_json_autoprefixer",
-      "apps_clinic_portal_package_json_postcss",
-      "apps_clinic_portal_package_json_vite",
-      "apps_patient_portal_package_devdependencies_autoprefixer"
-    ],
-    "39": [
       "apps_core_api_core_static_core_design",
       "apps_core_api_core_static_core_design_brand_style",
       "apps_core_api_core_static_core_design_colors",
@@ -873,14 +872,23 @@
       "apps_core_api_core_static_core_design_shapes",
       "apps_core_api_core_static_core_design_typography"
     ],
+    "39": [
+      "apps_clinic_portal_tsconfig_node",
+      "apps_clinic_portal_tsconfig_node_include",
+      "apps_clinic_portal_tsconfig_node_json_ref_vite_config_ts",
+      "apps_patient_portal_tsconfig_node",
+      "apps_patient_portal_tsconfig_node_include",
+      "apps_physician_portal_tsconfig_node",
+      "apps_physician_portal_tsconfig_node_include"
+    ],
     "40": [
-      "apps_clinic_portal_package_devdependencies_types_react_dom",
-      "apps_clinic_portal_package_json_types_react_dom",
-      "apps_patient_portal_package_devdependencies_types_react_dom",
-      "apps_physician_portal_package_devdependencies",
-      "apps_physician_portal_package_devdependencies_types_react_dom",
-      "apps_physician_portal_package_devdependencies_vite",
-      "apps_physician_portal_package_json_vite"
+      "apps_core_api_identity_authentication",
+      "apps_core_api_identity_authentication_blacklist_token",
+      "apps_core_api_identity_authentication_rationale_11",
+      "apps_core_api_identity_authentication_rationale_24",
+      "apps_core_api_identity_authentication_redisblacklistjwtauthentication",
+      "apps_core_api_identity_authentication_redisblacklistjwtauthentication_get_validated_token",
+      "jwtauthentication"
     ],
     "41": [
       "apps_core_api_package",
@@ -892,12 +900,12 @@
       "apps_core_api_package_scripts_lint"
     ],
     "42": [
-      "apps_core_api_gateway_views_proxy",
-      "apps_core_api_gateway_views_proxy_rationale_6",
-      "apps_core_api_gateway_views_proxy_wadorsproxyview",
-      "apps_core_api_gateway_views_proxy_wadorsproxyview_get",
-      "apps_core_api_gateway_views_proxy_wadorsproxyview_options",
-      "view"
+      "apps_core_api_core_init",
+      "apps_core_api_core_urls",
+      "apps_core_api_core_urls_rationale_1",
+      "apps_core_api_core_views",
+      "apps_core_api_core_views_health_check",
+      "apps_core_api_core_views_ready_check"
     ],
     "43": [
       "scripts_serve_viewer",
@@ -966,10 +974,10 @@
       "apps_physician_portal_package_dependencies_react_phone_number_input"
     ],
     "53": [
-      "apps_clinic_portal_package_dependencies_types_react_datepicker",
-      "apps_clinic_portal_package_json_types_react_datepicker",
-      "apps_patient_portal_package_dependencies_types_react_datepicker",
-      "apps_physician_portal_package_dependencies_types_react_datepicker"
+      "apps_clinic_portal_package_dependencies_react_use_websocket",
+      "apps_clinic_portal_package_json_react_use_websocket",
+      "apps_patient_portal_package_dependencies_react_use_websocket",
+      "apps_physician_portal_package_dependencies_react_use_websocket"
     ],
     "54": [
       "apps_clinic_portal_package_devdependencies_oxlint",
@@ -990,10 +998,10 @@
       "apps_physician_portal_package_devdependencies_types_node"
     ],
     "57": [
-      "apps_clinic_portal_package_devdependencies_types_react",
-      "apps_clinic_portal_package_json_types_react",
-      "apps_patient_portal_package_devdependencies_types_react",
-      "apps_physician_portal_package_devdependencies_types_react"
+      "apps_clinic_portal_package_devdependencies_types_react_dom",
+      "apps_clinic_portal_package_json_types_react_dom",
+      "apps_patient_portal_package_devdependencies_types_react_dom",
+      "apps_physician_portal_package_devdependencies_types_react_dom"
     ],
     "58": [
       "apps_clinic_portal_package_devdependencies_typescript",
@@ -1002,352 +1010,337 @@
       "package_json_typescript"
     ],
     "59": [
-      "apps_clinic_portal_package_devdependencies_vitejs_plugin_react",
-      "apps_clinic_portal_package_json_vitejs_plugin_react",
-      "apps_patient_portal_package_devdependencies_vitejs_plugin_react",
-      "apps_physician_portal_package_devdependencies_vitejs_plugin_react"
-    ],
-    "60": [
       "apps_clinic_portal_readme",
       "apps_clinic_portal_readme_expanding_the_oxlint_configuration",
       "apps_clinic_portal_readme_react_compiler",
       "apps_clinic_portal_readme_react_typescript_vite"
     ],
-    "61": [
+    "60": [
       "apps_core_api_core_apps",
       "apps_core_api_core_apps_coreconfig",
       "apps_core_api_core_apps_coreconfig_ready",
       "apps_core_api_core_apps_py_appconfig"
     ],
-    "62": [
-      "apps_core_api_gateway_client",
-      "apps_core_api_gateway_client_get_clinic_breaker",
-      "apps_core_api_gateway_client_rationale_14",
-      "circuitbreaker"
-    ],
-    "63": [
+    "61": [
       "apps_core_api_gateway_views_webhooks_clinicwebhookreceiver",
       "apps_core_api_gateway_views_webhooks_clinicwebhookreceiver_post",
       "apps_core_api_gateway_views_webhooks_py_apiview",
       "apps_core_api_gateway_views_webhooks_rationale_9"
     ],
-    "64": [
+    "62": [
       "apps_patient_portal_readme",
       "apps_patient_portal_readme_expanding_the_oxlint_configuration",
       "apps_patient_portal_readme_react_compiler",
       "apps_patient_portal_readme_react_typescript_vite"
     ],
-    "65": [
+    "63": [
       "apps_physician_portal_readme",
       "apps_physician_portal_readme_expanding_the_oxlint_configuration",
       "apps_physician_portal_readme_react_compiler",
       "apps_physician_portal_readme_react_typescript_vite"
     ],
-    "66": [
+    "64": [
       "packages_typescript_config_package",
       "packages_typescript_config_package_name",
       "packages_typescript_config_package_private",
       "packages_typescript_config_package_version"
     ],
-    "67": [
+    "65": [
       "status",
       "status_check_http",
       "status_check_port",
       "status_sh__entry"
     ],
-    "68": [
+    "66": [
       "apps_clinic_api_clinical_data_views",
       "apps_clinic_api_clinical_data_views_health_check",
       "apps_clinic_api_clinical_data_views_ready_check"
     ],
-    "69": [
+    "67": [
       "apps_clinic_api_manage",
       "apps_clinic_api_manage_main",
       "apps_clinic_api_manage_rationale_8"
     ],
-    "70": [
+    "68": [
       "apps_clinic_portal_package_dependencies_react_leaflet",
       "apps_clinic_portal_package_json_react_leaflet",
       "apps_patient_portal_package_dependencies_react_leaflet"
     ],
-    "71": [
+    "69": [
       "apps_clinic_portal_tsconfig",
       "apps_clinic_portal_tsconfig_files",
       "apps_clinic_portal_tsconfig_references"
     ],
-    "72": [
+    "70": [
       "apps_core_api_gateway_apps",
       "apps_core_api_gateway_apps_gatewayconfig",
       "apps_core_api_gateway_apps_py_appconfig"
     ],
-    "73": [
+    "71": [
       "apps_core_api_manage",
       "apps_core_api_manage_main",
       "apps_core_api_manage_rationale_8"
     ],
-    "74": [
+    "72": [
       "apps_patient_portal_tsconfig",
       "apps_patient_portal_tsconfig_files",
       "apps_patient_portal_tsconfig_references"
     ],
-    "75": [
+    "73": [
       "apps_physician_portal_tsconfig",
       "apps_physician_portal_tsconfig_files",
       "apps_physician_portal_tsconfig_references"
     ],
-    "76": [
+    "74": [
       "agents_rules_graphify",
       "agents_rules_graphify_graphify"
     ],
-    "77": [
+    "75": [
       "agents_workflows_graphify",
       "agents_workflows_graphify_workflow_graphify"
     ],
-    "78": [
+    "76": [
       "apps_clinic_api_clinic_api_asgi",
       "apps_clinic_api_clinic_api_asgi_rationale_1"
     ],
-    "79": [
+    "77": [
       "apps_clinic_api_clinic_api_settings",
       "apps_clinic_api_clinic_api_settings_rationale_1"
     ],
-    "80": [
+    "78": [
       "apps_clinic_api_clinic_api_wsgi",
       "apps_clinic_api_clinic_api_wsgi_rationale_1"
     ],
-    "81": [
+    "79": [
       "apps_clinic_api_clinical_data_migrations_0001_initial",
       "apps_clinic_api_clinical_data_migrations_0001_initial_migration"
     ],
-    "82": [
+    "80": [
       "apps_clinic_api_clinical_data_migrations_0002_remove_study_idx_study_patient_date_and_more",
       "apps_clinic_api_clinical_data_migrations_0002_remove_study_idx_study_patient_date_and_more_migration"
     ],
-    "83": [
+    "81": [
       "apps_clinic_api_clinical_data_migrations_0003_remove_studyrequest_patient_and_more",
       "apps_clinic_api_clinical_data_migrations_0003_remove_studyrequest_patient_and_more_migration"
     ],
-    "84": [
+    "82": [
       "apps_core_api_arospacs_wsgi",
       "apps_core_api_arospacs_wsgi_rationale_1"
     ],
-    "85": [
+    "83": [
       "apps_core_api_entrypoint",
       "apps_core_api_entrypoint_sh__entry"
     ],
-    "86": [
+    "84": [
       "apps_core_api_identity_migrations_0001_initial",
       "apps_core_api_identity_migrations_0001_initial_migration"
     ],
-    "87": [
+    "85": [
       "apps_core_api_identity_migrations_0002_clinicregistry_api_url_clinicregistry_webhook_secret_and_more",
       "apps_core_api_identity_migrations_0002_clinicregistry_api_url_clinicregistry_webhook_secret_and_more_migration"
     ],
-    "88": [
+    "86": [
       "apps_core_api_identity_migrations_0003_user_role",
       "apps_core_api_identity_migrations_0003_user_role_migration"
     ],
-    "89": [
+    "87": [
       "apps_core_api_identity_migrations_0004_patientprofile",
       "apps_core_api_identity_migrations_0004_patientprofile_migration"
     ],
-    "90": [
+    "88": [
       "apps_core_api_identity_migrations_0005_clinicregistry_primary_color",
       "apps_core_api_identity_migrations_0005_clinicregistry_primary_color_migration"
     ],
-    "91": [
+    "89": [
       "apps_core_api_identity_migrations_0006_patientdoctorconsent",
       "apps_core_api_identity_migrations_0006_patientdoctorconsent_migration"
     ],
-    "92": [
+    "90": [
       "apps_core_api_identity_migrations_0007_clinicregistry_address_clinicregistry_email_and_more",
       "apps_core_api_identity_migrations_0007_clinicregistry_address_clinicregistry_email_and_more_migration"
     ],
-    "93": [
+    "91": [
       "apps_core_api_identity_migrations_0008_clinicregistry_total_reviews_and_more",
       "apps_core_api_identity_migrations_0008_clinicregistry_total_reviews_and_more_migration"
     ],
-    "94": [
+    "92": [
       "apps_core_api_identity_migrations_0009_patientprofile_allergies_patientprofile_blood_type",
       "apps_core_api_identity_migrations_0009_patientprofile_allergies_patientprofile_blood_type_migration"
     ],
-    "95": [
+    "93": [
       "apps_core_api_identity_migrations_0010_clinicregistry_report_layout",
       "apps_core_api_identity_migrations_0010_clinicregistry_report_layout_migration"
     ],
-    "96": [
+    "94": [
       "apps_core_api_identity_migrations_0011_remove_staffprofile_avatar_url_user_avatar",
       "apps_core_api_identity_migrations_0011_remove_staffprofile_avatar_url_user_avatar_migration"
     ],
-    "97": [
+    "95": [
       "apps_core_api_identity_migrations_0012_appointment",
       "apps_core_api_identity_migrations_0012_appointment_migration"
     ],
-    "98": [
+    "96": [
       "apps_core_api_identity_migrations_0013_appointment_clinic_notes_clinicregistry_closing_time_and_more",
       "apps_core_api_identity_migrations_0013_appointment_clinic_notes_clinicregistry_closing_time_and_more_migration"
     ],
-    "99": [
+    "97": [
       "apps_core_api_identity_migrations_0014_staffprofile_clinic",
       "apps_core_api_identity_migrations_0014_staffprofile_clinic_migration"
     ],
-    "100": [
+    "98": [
       "apps_core_api_identity_migrations_0015_appointment_proposed_by",
       "apps_core_api_identity_migrations_0015_appointment_proposed_by_migration"
     ],
-    "101": [
+    "99": [
       "apps_orthanc_entrypoint",
       "apps_orthanc_entrypoint_sh__entry"
     ],
-    "102": [
+    "100": [
       "apps_orthanc_webhook",
       "apps_orthanc_webhook_onchange"
     ],
-    "103": [
+    "101": [
       "claude",
       "claude_graphify"
     ],
-    "104": [
+    "102": [
       "logs",
       "logs_sh__entry"
     ],
-    "105": [
+    "103": [
       "stop",
       "stop_sh__entry"
     ],
-    "106": [
+    "104": [
       "apps_clinic_api_clinic_api_init"
     ],
-    "107": [
+    "105": [
       "apps_clinic_api_clinical_data_admin"
     ],
-    "108": [
+    "106": [
       "apps_clinic_api_clinical_data_init"
     ],
-    "109": [
+    "107": [
       "apps_clinic_api_clinical_data_management_commands_init"
     ],
-    "110": [
+    "108": [
       "apps_clinic_api_clinical_data_management_init"
     ],
-    "111": [
+    "109": [
       "apps_clinic_api_clinical_data_migrations_init"
     ],
-    "112": [
+    "110": [
       "apps_clinic_api_clinical_data_signals"
     ],
-    "113": [
+    "111": [
       "apps_clinic_api_clinical_data_tests"
     ],
-    "114": [
+    "112": [
       "apps_clinic_api_clinical_data_views_init"
     ],
-    "115": [
+    "113": [
       "apps_clinic_api_core_ws_consumers_py_jsonwebsocketconsumer"
     ],
-    "116": [
+    "114": [
       "apps_clinic_portal_vite_config"
     ],
-    "117": [
+    "115": [
       "apps_core_api_arospacs_init"
     ],
-    "118": [
+    "116": [
       "apps_core_api_core_admin"
     ],
-    "119": [
+    "117": [
       "apps_core_api_core_consumers_py_jsonwebsocketconsumer"
     ],
-    "120": [
+    "118": [
       "apps_core_api_core_migrations_init"
     ],
-    "121": [
+    "119": [
       "apps_core_api_core_signals"
     ],
-    "122": [
+    "120": [
       "apps_core_api_core_tests_init"
     ],
-    "123": [
+    "121": [
       "apps_core_api_gateway_admin"
     ],
-    "124": [
-      "apps_core_api_gateway_consumers_py_database_sync_to_async"
-    ],
-    "125": [
+    "122": [
       "apps_core_api_gateway_migrations_init"
     ],
-    "126": [
+    "123": [
       "apps_core_api_gateway_models"
     ],
-    "127": [
+    "124": [
       "apps_core_api_gateway_services_init"
     ],
-    "128": [
+    "125": [
       "apps_core_api_gateway_tests"
     ],
-    "129": [
+    "126": [
       "apps_core_api_gateway_views"
     ],
-    "130": [
+    "127": [
       "apps_core_api_gateway_views_init"
     ],
-    "131": [
+    "128": [
       "apps_core_api_identity_apps_py_appconfig"
     ],
-    "132": [
+    "129": [
       "apps_core_api_identity_init"
     ],
-    "133": [
+    "130": [
       "apps_core_api_identity_management_commands_init"
     ],
-    "134": [
+    "131": [
       "apps_core_api_identity_management_init"
     ],
-    "135": [
+    "132": [
       "apps_core_api_identity_migrations_init"
     ],
-    "136": [
+    "133": [
       "apps_core_api_identity_tests"
     ],
-    "137": [
+    "134": [
       "apps_patient_portal_vite_config"
     ],
-    "138": [
+    "135": [
       "apps_physician_portal_vite_config"
     ],
-    "139": [
+    "136": [
       "packages_eslint_config_index"
     ]
   },
   "cohesion": {
-    "0": 0.05182443151771549,
-    "1": 0.041666666666666664,
-    "2": 0.058693244739756366,
-    "3": 0.04878048780487805,
+    "0": 0.06335204490777867,
+    "1": 0.07570621468926554,
+    "2": 0.041666666666666664,
+    "3": 0.058693244739756366,
     "4": 0.06451612903225806,
-    "5": 0.08275862068965517,
-    "6": 0.0960591133004926,
-    "7": 0.15384615384615385,
-    "8": 0.17666666666666667,
-    "9": 0.10507246376811594,
-    "10": 0.13438735177865613,
-    "11": 0.11462450592885376,
-    "12": 0.10822510822510822,
-    "13": 0.15584415584415584,
-    "14": 0.09090909090909091,
-    "15": 0.09523809523809523,
-    "16": 0.13450292397660818,
-    "17": 0.10526315789473684,
-    "18": 0.10526315789473684,
-    "19": 0.13725490196078433,
-    "20": 0.11764705882352941,
-    "21": 0.18095238095238095,
-    "22": 0.1978021978021978,
-    "23": 0.14285714285714285,
-    "24": 0.14285714285714285,
-    "25": 0.2948717948717949,
-    "26": 0.21212121212121213,
-    "27": 0.16666666666666666,
-    "28": 0.30303030303030304,
+    "5": 0.08172043010752689,
+    "6": 0.08275862068965517,
+    "7": 0.10507246376811594,
+    "8": 0.11462450592885376,
+    "9": 0.10822510822510822,
+    "10": 0.12987012987012986,
+    "11": 0.09090909090909091,
+    "12": 0.09523809523809523,
+    "13": 0.13450292397660818,
+    "14": 0.10526315789473684,
+    "15": 0.10526315789473684,
+    "16": 0.13725490196078433,
+    "17": 0.11764705882352941,
+    "18": 0.11764705882352941,
+    "19": 0.11764705882352941,
+    "20": 0.1978021978021978,
+    "21": 0.14285714285714285,
+    "22": 0.2948717948717949,
+    "23": 0.21212121212121213,
+    "24": 0.16666666666666666,
+    "25": 0.30303030303030304,
+    "26": 0.18181818181818182,
+    "27": 0.18181818181818182,
+    "28": 0.18181818181818182,
     "29": 0.18181818181818182,
     "30": 0.2,
     "31": 0.2,
@@ -1358,7 +1351,7 @@
     "36": 0.2857142857142857,
     "37": 0.2857142857142857,
     "38": 0.25,
-    "39": 0.25,
+    "39": 0.2857142857142857,
     "40": 0.2857142857142857,
     "41": 0.2857142857142857,
     "42": 0.3333333333333333,
@@ -1384,17 +1377,17 @@
     "62": 0.5,
     "63": 0.5,
     "64": 0.5,
-    "65": 0.5,
-    "66": 0.5,
-    "67": 0.8333333333333334,
+    "65": 0.8333333333333334,
+    "66": 0.6666666666666666,
+    "67": 0.6666666666666666,
     "68": 0.6666666666666666,
     "69": 0.6666666666666666,
     "70": 0.6666666666666666,
     "71": 0.6666666666666666,
     "72": 0.6666666666666666,
     "73": 0.6666666666666666,
-    "74": 0.6666666666666666,
-    "75": 0.6666666666666666,
+    "74": 1.0,
+    "75": 1.0,
     "76": 1.0,
     "77": 1.0,
     "78": 1.0,
@@ -1455,36 +1448,38 @@
     "133": 1.0,
     "134": 1.0,
     "135": 1.0,
-    "136": 1.0,
-    "137": 1.0,
-    "138": 1.0,
-    "139": 1.0
+    "136": 1.0
   },
   "gods": [
     {
-      "id": "apps_core_api_identity_models_user",
-      "label": "User",
-      "degree": 27
-    },
-    {
       "id": "apps_core_api_identity_models_patientprofile",
       "label": "PatientProfile",
-      "degree": 24
+      "degree": 40
+    },
+    {
+      "id": "apps_core_api_identity_models_user",
+      "label": "User",
+      "degree": 39
     },
     {
       "id": "apps_core_api_identity_models_clinicregistry",
       "label": "ClinicRegistry",
-      "degree": 21
+      "degree": 36
     },
     {
       "id": "apps_core_api_identity_models_roles",
       "label": "Roles",
-      "degree": 19
+      "degree": 31
+    },
+    {
+      "id": "apps_core_api_identity_models_staffprofile",
+      "label": "StaffProfile",
+      "degree": 25
     },
     {
       "id": "apps_core_api_identity_models_federationidmap",
       "label": "FederationIDMap",
-      "degree": 19
+      "degree": 23
     },
     {
       "id": "apps_clinic_portal_tsconfig_app_compileroptions",
@@ -1505,11 +1500,6 @@
       "id": "apps_core_api_identity_models_appointment",
       "label": "Appointment",
       "degree": 17
-    },
-    {
-      "id": "apps_clinic_portal_tsconfig_node_compileroptions",
-      "label": "compilerOptions",
-      "degree": 15
     }
   ],
   "surprises": [
@@ -1559,10 +1549,10 @@
     },
     {
       "source": "FederatedStudiesView",
-      "target": "ClinicService",
+      "target": "ClinicRegistry",
       "source_files": [
         "apps/core-api/gateway/views/federated.py",
-        "apps/core-api/gateway/services/clinic_integration.py"
+        "apps/core-api/identity/models.py"
       ],
       "confidence": "INFERRED",
       "relation": "uses",

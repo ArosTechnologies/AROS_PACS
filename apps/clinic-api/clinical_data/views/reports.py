@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from clinical_data.models import Report
 
+from django.core.cache import cache
+
 class ReportView(APIView):
     """
     Create a Report with findings and conclusions.
@@ -34,12 +36,13 @@ class ReportView(APIView):
                     study.report = report
                     study.save()
                 
-            try:
-                from core_ws.broadcast import notify_clinic_report_completed
-                notify_clinic_report_completed(report, study)
-            except Exception as e:
-                print(f"WS notification error: {e}")
+            response_data = {"status": "created", "id": report.id_report}
+            if study and study.aros_patient_id:
+                response_data["local_patient_id"] = study.aros_patient_id
+                response_data["patient_name"] = "Paciente"
+                cache.delete(f"clinic_studies_{study.aros_patient_id}")
+                cache.delete("clinic_studies_all")
 
-            return Response({"status": "created", "id": report.id_report}, status=status.HTTP_201_CREATED)
+            return Response(response_data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
