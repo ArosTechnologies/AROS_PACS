@@ -185,21 +185,13 @@ setup_backends() {
   apps/core-api/.venv/bin/python apps/core-api/manage.py migrate --noinput > "$LOGS_DIR/core-migrate.log" 2>&1
   echo -e "${GREEN}✓ Core API database migrated.${NC}"
 
-  if [ "$RESET_DB" = true ]; then
-    echo -e "${CYAN}Loading demo credentials for Core API...${NC}"
-    apps/core-api/.venv/bin/python apps/core-api/manage.py load_demo_data > "$LOGS_DIR/core-seed.log" 2>&1
-    echo -e "${GREEN}✓ Demo data loaded.${NC}"
-  else
-    echo -e "${YELLOW}ℹ️ Skipping demo data generation. Use --reset to generate fresh data.${NC}"
-  fi
+  echo -e "${CYAN}Loading demo credentials for Core API...${NC}"
+  apps/core-api/.venv/bin/python apps/core-api/manage.py load_demo_data > "$LOGS_DIR/core-seed.log" 2>&1
+  echo -e "${GREEN}✓ Demo data loaded.${NC}"
 
   echo -e "${CYAN}Applying database migrations for Clinic API...${NC}"
   apps/clinic-api/.venv/bin/python apps/clinic-api/manage.py migrate --noinput > "$LOGS_DIR/clinic-migrate.log" 2>&1
   echo -e "${GREEN}✓ Clinic API database migrated.${NC}"
-
-  echo -e "${CYAN}Syncing demo studies for Clinic API...${NC}"
-  apps/clinic-api/.venv/bin/python apps/clinic-api/manage.py sync_demo_studies > "$LOGS_DIR/clinic-seed.log" 2>&1
-  echo -e "${GREEN}✓ Demo studies synced.${NC}"
 }
 
 # Setup frontend dependencies if needed

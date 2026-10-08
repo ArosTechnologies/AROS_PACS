@@ -76,11 +76,8 @@ print("Created clinics.")
 
 # Ensure Patient and Doctor exist
 demo_patients = [
-    {"email": "paciente1@demo.com", "password": "password123", "first": "Juan", "last": "Pérez"},
-    {"email": "paciente2@demo.com", "password": "password123", "first": "Laura", "last": "García"},
-    {"email": "paciente3@demo.com", "password": "password123", "first": "Carlos", "last": "Ruiz"},
-    {"email": "test@example.com", "password": "password", "first": "Test", "last": "Patient"}
-]
+    {"email": f"paciente{i}@demo.com", "password": "password123", "first": f"Paciente{i}", "last": "Demo"} for i in range(1, 11)
+] + [{"email": "test@example.com", "password": "password", "first": "Test", "last": "Patient"}]
 
 patient_ids = []
 for p in demo_patients:
@@ -99,18 +96,23 @@ for p in demo_patients:
 patient_user = User.objects.get(email_hash="test@example.com") # For the ID at the end
 print(f"Created/Verified demo patients.")
 
-try:
-    doctor_user = User.objects.get(email_hash="doctor@example.com")
-except User.DoesNotExist:
-    doctor_user = User.objects.create_user(email_hash="doctor@example.com", password="password")
-    StaffProfile.objects.create(
-        user=doctor_user, 
-        first_name="Dra. Ana", 
-        last_name="García", 
-        specialty="Radiología Oncológica"
-    )
+demo_doctors = [{"email": f"doctor{i}@demo.com", "password": "password123", "first": f"Doctor{i}", "last": "Demo"} for i in range(1, 6)]
+doctor_ids = []
+for d in demo_doctors:
+    try:
+        doc_user = User.objects.get(email_hash=d["email"])
+    except User.DoesNotExist:
+        doc_user = User.objects.create_user(email_hash=d["email"], password=d["password"])
+        StaffProfile.objects.create(
+            user=doc_user, 
+            first_name=d["first"], 
+            last_name=d["last"], 
+            specialty="Radiología"
+        )
+    doctor_ids.append(doc_user.id)
 
-print(f"Doctor ID: {doctor_user.id}")
+doctor_user = User.objects.get(email_hash="doctor1@demo.com")
+print(f"Created/Verified demo doctors. First Doctor ID: {doctor_user.id}")
 
 with open('/tmp/aros_ids.txt', 'w') as f:
     f.write(f"{patient_user.id}\n{doctor_user.id}")
